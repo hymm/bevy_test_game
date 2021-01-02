@@ -91,8 +91,20 @@ struct MapRow {
     sprite: u32,
 }
 
+struct House {
+    tile_x: f32,
+    tile_y: f32,
+}
+
+struct BusStop {
+    tile_x: f32,
+    tile_y: f32,
+}
+
 struct Map {
     rows: [MapRow; 16],
+    house: House,
+    bus_stop: BusStop,
     // cars: Vec<Car>,
 }
 
@@ -115,6 +127,14 @@ const map: Map = Map {
         MapRow { sprite: 2, },
         MapRow { sprite: 3, },
     ],
+    house: House {
+        tile_x: 0.5,
+        tile_y: 0.5,
+    },
+    bus_stop: BusStop {
+        tile_x: 14.5,
+        tile_y: 14.5,
+    } 
     /*cars: vec![
         Car {
             x: 0,
@@ -129,6 +149,7 @@ fn draw_map(
     commands: &mut Commands, 
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // load sprite sheet as texture atlas
     
@@ -139,11 +160,11 @@ fn draw_map(
     commands.spawn(Camera2dBundle {
         transform: Transform {
             translation: Vec3::new(64.0 * 4.0, 64.0 * 4.0, 1000.0 - 0.1),
-            rotation: Quat::default(),
-            scale: Vec3::new(1.0, -1.0, 1.0)
+            ..Default::default()
         },
-        ..Camera2dBundle::default() }
-    );
+        ..Camera2dBundle::default() 
+    });
+    
     for r in 0..map.rows.len() {
         for c in 0..16   {
             commands.spawn(SpriteSheetBundle {
@@ -158,4 +179,26 @@ fn draw_map(
             });
         }
     }
+
+    let house_handle = asset_server.get_handle("house.png");
+    commands.spawn(SpriteBundle {
+        material: materials.add(house_handle.into()),
+        transform: Transform {
+            translation: Vec3::new(map.house.tile_x * 32.0, map.house.tile_y * 32.0, 0.0),
+            scale: Vec3::splat(4.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+
+    let bus_stop_handle = asset_server.get_handle("bus_stop.png");
+    commands.spawn(SpriteBundle {
+        material: materials.add(bus_stop_handle.into()),
+        transform: Transform {
+            translation: Vec3::new(map.bus_stop.tile_x * 32.0, map.bus_stop.tile_y * 32.0, 0.0),
+            scale: Vec3::splat(4.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
 }
