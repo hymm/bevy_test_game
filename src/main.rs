@@ -1,15 +1,31 @@
 use bevy::prelude::*;
 use bevy::{asset::LoadState, sprite::TextureAtlasBuilder};
 
+
+const TILE_WIDTH: f32 = 16.0;
+const TILE_HEIGHT: f32 = 16.0;
+const SCALE: f32 = 4.0;
+const TILE_SIZE: i32 = 8;
+
 fn main() {
     App::build()
         .init_resource::<SpriteHandles>()
+        .add_resource(WindowDescriptor {
+            title: "Shoe Crosses the Road".to_string(),
+            width: TILE_WIDTH * SCALE * TILE_SIZE as f32,
+            height: TILE_HEIGHT * SCALE * TILE_SIZE as f32,
+            ..Default::default()
+        })
         .add_plugins(DefaultPlugins)
         .add_resource(State::new(AppState::Setup))
         .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
         .on_state_enter(STAGE, AppState::Setup, load_textures.system())
         .on_state_update(STAGE, AppState::Setup, check_textures.system())
         .on_state_enter(STAGE, AppState::Finished, draw_map.system())
+        .on_state_enter(STAGE, AppState::Finished, spawn_car.system())
+        .add_system(update_position.system())
+        .add_system(convert_tile_coord.system())
+        .add_system(position_translation.system())
         .run();
 }
 
@@ -71,20 +87,13 @@ fn setup(
         .spawn(SpriteSheetBundle {
             transform: Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
-                scale: Vec3::splat(4.0),
+                scale: Vec3::splat(SCALE),
                 ..Default::default()
             },
             sprite: TextureAtlasSprite::new(vendor_index as u32),
             texture_atlas: atlas_handle,
             ..Default::default()
         });
-}
-
-struct Car {
-    x: i16,
-    y: i16,
-    speed: f32,
-    hitbox_width: i16,
 }
 
 struct MapRow {
@@ -107,6 +116,28 @@ struct Map {
     bus_stop: BusStop,
     // cars: Vec<Car>,
 }
+
+#[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Default, Copy, Clone, PartialEq)]
+struct TilePosition {
+    x: f32,
+    y: f32,
+}
+
+
+#[derive(Default, Copy, Clone, PartialEq)]
+struct Velocity {
+    x: f32,
+    y: f32,
+}
+
+struct Player;
+struct Car;
 
 const map: Map = Map {
     rows: [
@@ -145,6 +176,10 @@ const map: Map = Map {
     ]*/
 };
 
+fn get_transform_vector_from_tile_coordinate(t: TilePosition) -> Vec3 {
+    Vec3::new(t.x as f32 * SCALE * TILE_SIZE as f32, t.y as f32 * SCALE * TILE_SIZE as f32, 0.0)
+}
+
 fn draw_map(
     commands: &mut Commands, 
     asset_server: Res<AssetServer>,
@@ -159,7 +194,7 @@ fn draw_map(
     // let vendor_index = texture_atlas.get_texture_index(&texture_handle).unwrap();
     commands.spawn(Camera2dBundle {
         transform: Transform {
-            translation: Vec3::new(64.0 * 4.0, 64.0 * 4.0, 1000.0 - 0.1),
+            translation: Vec3::new(64.0 * SCALE, 64.0 * SCALE, 1000.0 - 0.1),
             ..Default::default()
         },
         ..Camera2dBundle::default() 
@@ -170,8 +205,8 @@ fn draw_map(
             commands.spawn(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform {
-                    translation: Vec3::new((c as f32) * 32.0, (r as f32) * 32.0, 0.0),
-                    scale: Vec3::splat(4.0),
+                    translation: get_transform_vector_from_tile_coordinate(TilePosition { x: c as f32, y: r as f32 }),
+                    scale: Vec3::splat(SCALE),
                     ..Default::default()
                 },
                 sprite: TextureAtlasSprite::new(map.rows[r].sprite),
@@ -184,8 +219,13 @@ fn draw_map(
     commands.spawn(SpriteBundle {
         material: materials.add(house_handle.into()),
         transform: Transform {
-            translation: Vec3::new(map.house.tile_x * 32.0, map.house.tile_y * 32.0, 0.0),
-            scale: Vec3::splat(4.0),
+            translation: get_transform_vector_from_tile_coordinate(
+                TilePosition { 
+                    x: map.house.tile_x, 
+                    y: map.house.tile_y,
+                }
+            ),
+            scale: Vec3::splat(SCALE),
             ..Default::default()
         },
         ..Default::default()
@@ -195,10 +235,62 @@ fn draw_map(
     commands.spawn(SpriteBundle {
         material: materials.add(bus_stop_handle.into()),
         transform: Transform {
-            translation: Vec3::new(map.bus_stop.tile_x * 32.0, map.bus_stop.tile_y * 32.0, 0.0),
-            scale: Vec3::splat(4.0),
+            translation: get_transform_vector_from_tile_coordinate(
+                TilePosition { 
+                    x: map.bus_stop.tile_x, 
+                    y: map.bus_stop.tile_y,
+                }
+            ),
+            scale: Vec3::splat(SCALE),
             ..Default::default()
         },
         ..Default::default()
     });
+}
+
+fn convert_tile_coord(mut q: Query<(&mut Position, &TilePosition)>) {
+    for (mut pos, tile_pos) in q.iter_mut() {
+        pos.x = (tile_pos.x * TILE_SIZE as f32) as i32;
+        pos.y = (tile_pos.y * TILE_SIZE as f32) as i32;
+    }
+}
+
+fn position_translation(mut q: Query<(&Position, &mut Transform)>) {
+    for (pos, mut transform) in q.iter_mut() {
+        transform.translation = Vec3::new(pos.x as f32, pos.y as f32, 0.0);
+    }
+}
+
+fn spawn_car(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let m = asset_server.get_handle("suv.png");
+    let tile_pos = TilePosition { x: 0.0, y: 6.0 };
+    commands
+        .spawn(SpriteBundle {
+            material: materials.add(m.into()),
+            transform: Transform {
+                scale: Vec3::splat(SCALE),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .with(Car)
+        .with(Position { 
+            x: (tile_pos.x * TILE_SIZE as f32 * SCALE) as i32, 
+            y: (tile_pos.y * TILE_SIZE as f32 * SCALE) as i32, 
+        })
+        .with(Velocity {
+            x: 1.0,
+            y: 0.0,
+        });
+}
+
+fn update_position(mut q: Query<(&Velocity, &mut Position)>) {
+    for (v, mut p) in q.iter_mut() {
+        p.x += (v.x * SCALE) as i32;
+        p.y += (v.y * SCALE) as i32;
+    }
 }
