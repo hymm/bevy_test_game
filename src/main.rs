@@ -6,6 +6,8 @@ const TILE_WIDTH: f32 = 16.0;
 const TILE_HEIGHT: f32 = 16.0;
 const SCALE: f32 = 4.0;
 const TILE_SIZE: i32 = 8;
+const SCREEN_X_MAX: i32 = TILE_WIDTH as i32 * TILE_SIZE * SCALE as i32;
+const SCREEN_Y_MAX: i32 = TILE_HEIGHT as i32 * TILE_SIZE * SCALE as i32;
 
 fn main() {
     App::build()
@@ -22,10 +24,14 @@ fn main() {
         .on_state_enter(STAGE, AppState::Setup, load_textures.system())
         .on_state_update(STAGE, AppState::Setup, check_textures.system())
         .on_state_enter(STAGE, AppState::Finished, draw_map.system())
-        .on_state_enter(STAGE, AppState::Finished, spawn_car.system())
+        .on_state_enter(STAGE, AppState::Finished, spawn_initial_cars.system())
         .add_system(update_position.system())
         .add_system(convert_tile_coord.system())
         .add_system(position_translation.system())
+        .add_event::<FullyOffscreenEvent>()
+        .add_event::<PartiallyOffscreenEvent>()
+        .add_system(offscreen.system())
+        .add_system(despawn_out_of_bounds.system())
         .run();
 }
 
@@ -136,8 +142,29 @@ struct Velocity {
     y: f32,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+struct Hitbox {
+    x: f32, // relative to parent
+    y: f32, // relative to parent
+    width: f32,
+    height: f32,
+}
+
+impl Default for Hitbox {
+    fn default() -> Self {
+        Hitbox {
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0,
+        }
+    }
+}
+
 struct Player;
 struct Car;
+struct PartiallyOffscreenEvent(Entity, f32);
+struct FullyOffscreenEvent(Entity);
 
 const map: Map = Map {
     rows: [
@@ -176,8 +203,8 @@ const map: Map = Map {
     ]*/
 };
 
-fn get_transform_vector_from_tile_coordinate(t: TilePosition) -> Vec3 {
-    Vec3::new(t.x as f32 * SCALE * TILE_SIZE as f32, t.y as f32 * SCALE * TILE_SIZE as f32, 0.0)
+fn get_transform_vector_from_tile_coordinate(t: TilePosition, offset: f32) -> Vec3 {
+Vec3::new((t.x as f32 * TILE_SIZE as f32 + offset) * SCALE, (t.y as f32 * TILE_SIZE as f32 + offset) * SCALE, 0.0)
 }
 
 fn draw_map(
@@ -205,7 +232,9 @@ fn draw_map(
             commands.spawn(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform {
-                    translation: get_transform_vector_from_tile_coordinate(TilePosition { x: c as f32, y: r as f32 }),
+                    translation: get_transform_vector_from_tile_coordinate(
+                        TilePosition { x: c as f32, y: r as f32 }, 4.0
+                    ),
                     scale: Vec3::splat(SCALE),
                     ..Default::default()
                 },
@@ -223,7 +252,8 @@ fn draw_map(
                 TilePosition { 
                     x: map.house.tile_x, 
                     y: map.house.tile_y,
-                }
+                },
+                4.0
             ),
             scale: Vec3::splat(SCALE),
             ..Default::default()
@@ -239,7 +269,8 @@ fn draw_map(
                 TilePosition { 
                     x: map.bus_stop.tile_x, 
                     y: map.bus_stop.tile_y,
-                }
+                },
+                4.0
             ),
             scale: Vec3::splat(SCALE),
             ..Default::default()
@@ -265,9 +296,9 @@ fn spawn_car(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    tile_pos: TilePosition,
 ) {
     let m = asset_server.get_handle("suv.png");
-    let tile_pos = TilePosition { x: 0.0, y: 6.0 };
     commands
         .spawn(SpriteBundle {
             material: materials.add(m.into()),
@@ -279,14 +310,75 @@ fn spawn_car(
         })
         .with(Car)
         .with(Position { 
-            x: (tile_pos.x * TILE_SIZE as f32 * SCALE) as i32, 
+            x: (tile_pos.x * TILE_SIZE as f32 * SCALE) as i32,
             y: (tile_pos.y * TILE_SIZE as f32 * SCALE) as i32, 
         })
         .with(Velocity {
             x: 1.0,
             y: 0.0,
+        })
+        .with(Hitbox {
+            width: 14.0,
+            height: 8.0,
+            ..Default::default()
         });
 }
+
+fn spawn_initial_cars(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let tile_pos = TilePosition { x: 0.1, y: 6.0 };
+    spawn_car(commands, asset_server, materials, tile_pos)
+}
+
+fn offscreen(
+    mut q: Query<(Entity, &Position, &Hitbox)>,
+    mut ev_partial: ResMut<Events<PartiallyOffscreenEvent>>,
+    mut ev_full: ResMut<Events<FullyOffscreenEvent>>,
+) {
+    for (entity, pos, hitbox) in q.iter_mut() {
+        let left = pos.x as f32 + hitbox.x;
+        let right = pos.x as f32 + hitbox.x + hitbox.width;
+        let top = pos.y as f32 + hitbox.y;
+        let bottom = pos.y as f32 + hitbox.y + hitbox.height;
+        if (right as i32) < 0 || (left as i32) > SCREEN_X_MAX
+            || (top as i32) < 0 || (bottom as i32) > SCREEN_Y_MAX {
+            ev_full.send(FullyOffscreenEvent(entity));
+            continue;       
+        }
+
+        if (left as i32) < 0 || (right as i32) > SCREEN_X_MAX
+            || (bottom as i32) < 0 || (top as i32) > SCREEN_Y_MAX {
+            ev_partial.send(PartiallyOffscreenEvent(entity, pos.y as f32));
+            continue;
+        }
+    }
+}
+
+fn despawn_out_of_bounds(
+    commands: &mut Commands,
+    events: Res<Events<FullyOffscreenEvent>>,
+    mut event_reader: Local<EventReader<FullyOffscreenEvent>>,
+) {
+    for ev in event_reader.iter(&events) {
+        commands.despawn(ev.0);
+    }
+}
+
+// fn spawn_another_car(
+//     commands: &mut Commands,
+//     events: Res<Events<PartiallyOffscreenEvent>>,
+//     mut event_reader: Local<EventReader<PartiallyOffscreenEvent>>,
+//     asset_server: Res<AssetServer>,
+//     mut materials: ResMut<Assets<ColorMaterial>>
+// ) {
+//     for ev in event_reader.iter(&events) {
+//         spawn_car(commands, asset_server, materials, TilePosition { x: 0.1, y: ev.1 });
+//     }
+// }
+
 
 fn update_position(mut q: Query<(&Velocity, &mut Position)>) {
     for (v, mut p) in q.iter_mut() {
