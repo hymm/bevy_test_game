@@ -632,6 +632,7 @@ name = "bevy_test_game"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_tilemap",
 ]
 
 [[package]]
@@ -653,6 +654,38 @@ dependencies = [
  "bevy_utils",
  "glyph_brush_layout",
  "thiserror",
+]
+
+[[package]]
+name = "bevy_tilemap"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dee85decfc458bffa33aa3eb5c368e7fc3e804cbe12bee9a89d1abbcea6c7f26"
+dependencies = [
+ "bevy_app",
+ "bevy_asset",
+ "bevy_core",
+ "bevy_ecs",
+ "bevy_log",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_sprite",
+ "bevy_tilemap_types",
+ "bevy_transform",
+ "bevy_utils",
+ "bitflags",
+ "hexasphere",
+]
+
+[[package]]
+name = "bevy_tilemap_types"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f259a258f9f8ad49570d78730305f85bc29239ed1de83c9be9a390ddb4cce45c"
+dependencies = [
+ "bevy_math",
+ "bevy_render",
 ]
 
 [[package]]
