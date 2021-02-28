@@ -1,14 +1,8 @@
-use bevy::{
-    input::system::exit_on_esc_system, 
-    prelude::*
-};
+use bevy::{input::system::exit_on_esc_system, prelude::*};
 mod consts;
 mod loader;
 mod map;
-use crate::consts::{
-    AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE,
-    TILE_WIDTH,
-};
+use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 mod car;
 use car::Position;
 use map::TilePosition;
@@ -29,8 +23,7 @@ fn main() {
             APP_STATE_STAGE,
             StateStage::<AppState>::default(),
         )
-        .on_state_enter(APP_STATE_STAGE,
-            AppState::Setup,setup.system())
+        .on_state_enter(APP_STATE_STAGE, AppState::Setup, setup.system())
         .add_plugin(loader::AssetsLoadingPlugin)
         .add_plugin(map::MapPlugin)
         .add_plugin(car::CarPlugin)
@@ -40,10 +33,7 @@ fn main() {
 
 struct Player;
 
-fn setup(
-    commands: &mut Commands, 
-    mut state: ResMut<State<AppState>>,
-) {
+fn setup(commands: &mut Commands, mut state: ResMut<State<AppState>>) {
     commands.spawn(Camera2dBundle {
         transform: Transform {
             translation: Vec3::new(64.0 * SCALE, 64.0 * SCALE, 1000.0 - 0.1),
@@ -56,8 +46,7 @@ fn setup(
 
 fn convert_tile_coord(mut q: Query<(&mut Position, &TilePosition)>) {
     for (mut pos, tile_pos) in q.iter_mut() {
-        pos.x = (tile_pos.x * TILE_SIZE as f32) as i32;
-        pos.y = (tile_pos.y * TILE_SIZE as f32) as i32;
+        pos.x = tile_pos.x * TILE_SIZE as f32;
+        pos.y = tile_pos.y * TILE_SIZE as f32;
     }
 }
-

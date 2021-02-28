@@ -48,8 +48,7 @@ const map: Map = Map {
     bus_stop: BusStop {
         tile_x: 14.5,
         tile_y: 14.5,
-    }, 
-    
+    },
     /*cars: vec![
         Car {
             x: 0,
