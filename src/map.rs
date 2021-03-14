@@ -1,5 +1,6 @@
-use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_SIZE};
+use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
 use bevy::prelude::*;
+use crate::coordinates::TilePosition;
 
 struct MapRow {
     sprite: u32,
@@ -59,20 +60,6 @@ const map: Map = Map {
     ]*/
 };
 
-#[derive(Default, Copy, Clone, PartialEq)]
-pub struct TilePosition {
-    pub x: f32,
-    pub y: f32,
-}
-
-fn get_transform_vector_from_tile_coordinate(t: TilePosition, offset: f32) -> Vec3 {
-    Vec3::new(
-        (t.x as f32 * TILE_SIZE as f32 + offset) * SCALE,
-        (t.y as f32 * TILE_SIZE as f32 + offset) * SCALE,
-        0.0,
-    )
-}
-
 fn load_map_atlas(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
@@ -81,25 +68,19 @@ fn load_map_atlas(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let texture_handle = asset_server.get_handle("map_tiles.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(8.0, 8.0), 4, 3);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32), 4, 3);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     for r in 0..map.rows.len() {
         for c in 0..16 {
+            let spr = TextureAtlasSprite::new(map.rows[r].sprite);
             commands.spawn(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform {
-                    translation: get_transform_vector_from_tile_coordinate(
-                        TilePosition {
-                            x: c as f32,
-                            y: r as f32,
-                        },
-                        4.0,
-                    ),
-                    scale: Vec3::splat(SCALE),
+                    translation: TilePosition(Vec2::new(c as f32, r as f32)).get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
                     ..Default::default()
                 },
-                sprite: TextureAtlasSprite::new(map.rows[r].sprite),
+                sprite: spr,
                 ..Default::default()
             });
         }
@@ -109,14 +90,7 @@ fn load_map_atlas(
     commands.spawn(SpriteBundle {
         material: materials.add(house_handle.into()),
         transform: Transform {
-            translation: get_transform_vector_from_tile_coordinate(
-                TilePosition {
-                    x: map.house.tile_x,
-                    y: map.house.tile_y,
-                },
-                4.0,
-            ),
-            scale: Vec3::splat(SCALE),
+            translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y)).get_translation(Vec2::new(16., 16.)),
             ..Default::default()
         },
         ..Default::default()
@@ -126,14 +100,7 @@ fn load_map_atlas(
     commands.spawn(SpriteBundle {
         material: materials.add(bus_stop_handle.into()),
         transform: Transform {
-            translation: get_transform_vector_from_tile_coordinate(
-                TilePosition {
-                    x: map.bus_stop.tile_x,
-                    y: map.bus_stop.tile_y,
-                },
-                4.0,
-            ),
-            scale: Vec3::splat(SCALE),
+            translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y)).get_translation(Vec2::new(16., 16.)),
             ..Default::default()
         },
         ..Default::default()

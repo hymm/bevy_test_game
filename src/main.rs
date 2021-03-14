@@ -1,17 +1,22 @@
-use bevy::{input::system::exit_on_esc_system, prelude::*};
+use bevy::{
+    input::system::exit_on_esc_system, 
+    prelude::*,
+    render::camera::Camera,
+};
+
+
 mod consts;
 mod loader;
 mod map;
-use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 mod car;
-use car::Position;
-use map::TilePosition;
+mod coordinates;
+use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
     App::build()
         .add_resource(WindowDescriptor {
             title: "Shoe Crosses the Road".to_string(),
-            width: TILE_WIDTH * SCALE * TILE_SIZE as f32,
+            width: TILE_WIDTH * SCALE * TILE_SIZE  as f32,
             height: TILE_HEIGHT * SCALE * TILE_SIZE as f32,
             ..Default::default()
         })
@@ -27,7 +32,6 @@ fn main() {
         .add_plugin(loader::AssetsLoadingPlugin)
         .add_plugin(map::MapPlugin)
         .add_plugin(car::CarPlugin)
-        .add_system(convert_tile_coord.system())
         .run();
 }
 
@@ -36,17 +40,11 @@ struct Player;
 fn setup(commands: &mut Commands, mut state: ResMut<State<AppState>>) {
     commands.spawn(Camera2dBundle {
         transform: Transform {
-            translation: Vec3::new(64.0 * SCALE, 64.0 * SCALE, 1000.0 - 0.1),
+            translation: Vec3::new(64.0, 64.0, 0.0),
+            scale: Vec3::splat(1. / SCALE),
             ..Default::default()
         },
         ..Camera2dBundle::default()
     });
     state.set_next(AppState::AssetLoading).unwrap();
-}
-
-fn convert_tile_coord(mut q: Query<(&mut Position, &TilePosition)>) {
-    for (mut pos, tile_pos) in q.iter_mut() {
-        pos.x = tile_pos.x * TILE_SIZE as f32;
-        pos.y = tile_pos.y * TILE_SIZE as f32;
-    }
 }

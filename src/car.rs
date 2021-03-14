@@ -1,15 +1,9 @@
-use crate::consts::{AppState, APP_STATE_STAGE, SCALE, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
-use crate::map::TilePosition;
+use crate::consts::{AppState, APP_STATE_STAGE, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
+use crate::coordinates::{TilePosition, PixelPosition};
 use bevy::prelude::*;
 
 struct Car;
 struct GoingOffscreenEvent(Entity, f32);
-
-#[derive(Default, Copy, Clone, PartialEq)]
-pub struct Position {
-    pub x: f32,
-    pub y: f32,
-}
 
 #[derive(Default, Copy, Clone, PartialEq)]
 struct Velocity {
@@ -53,18 +47,14 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
     commands
         .spawn(SpriteBundle {
             material: m.suv_material,
-            transform: Transform {
-                scale: Vec3::splat(SCALE),
-                ..Default::default()
-            },
             ..Default::default()
         })
         .with(Car)
-        .with(Position {
-            x: (tile_pos.x * TILE_SIZE as f32 * SCALE),
-            y: (tile_pos.y * TILE_SIZE as f32 * SCALE),
-        })
-        .with(Velocity { x: 10.0, y: 0.0 }) // pixels per second
+        .with(PixelPosition(Vec2::new(
+            tile_pos.0.x * TILE_SIZE as f32, 
+            tile_pos.0.y * TILE_SIZE as f32,
+        )))
+        .with(Velocity { x: 30.0, y: 0.0 }) // pixels per second
         .with(Hitbox {
             width: 14.0,
             height: 8.0,
@@ -74,7 +64,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
 }
 
 fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>) {
-    let tile_pos = TilePosition { x: 0.1, y: 6.0 };
+    let tile_pos = TilePosition(Vec2::new(0.1, 6.0));
     spawn_car(commands, m.clone(), tile_pos)
 }
 
@@ -85,24 +75,24 @@ fn spawn_another_car(
     m: Res<Materials>,
 ) {
     for ev in event_reader.iter(&events) {
-        spawn_car(commands, m.clone(), TilePosition { x: 0.0, y: ev.1 });
+        spawn_car(commands, m.clone(), TilePosition(Vec2::new(0.0, 0.1)));
     }
 }
 
-fn position_translation(mut q: Query<(&Position, &mut Transform)>) {
-    for (pos, mut transform) in q.iter_mut() {
-        transform.translation = Vec3::new(pos.x as f32, pos.y as f32, 0.0);
+fn position_translation(mut q: Query<(&PixelPosition, &mut Transform, &Sprite)>) {
+    for (pos, mut transform, sprite) in q.iter_mut() {
+        transform.translation = pos.get_translation(sprite.size);
     }
 }
 
 struct FullyOffscreen;
 struct GoingOffscreen;
-fn fully_offscreen(mut q: Query<(Entity, &Position, &Hitbox), Without<FullyOffscreen>>, commands: &mut Commands) {
+fn fully_offscreen(mut q: Query<(Entity, &PixelPosition, &Hitbox), Without<FullyOffscreen>>, commands: &mut Commands) {
     for (entity, pos, hitbox) in q.iter_mut() {
-        let left = pos.x + hitbox.x - hitbox.width / 2.;
-        let right = pos.x + hitbox.x + hitbox.width / 2.;
-        let top = pos.y + hitbox.y - hitbox.height / 2. ;
-        let bottom = pos.y + hitbox.y + hitbox.height / 2.;
+        let left = pos.0.x + hitbox.x - hitbox.width / 2.;
+        let right = pos.0.x + hitbox.x + hitbox.width / 2.;
+        let top = pos.0.y + hitbox.y - hitbox.height / 2. ;
+        let bottom = pos.0.y + hitbox.y + hitbox.height / 2.;
         if (right as i32) < 0
             || (left as i32) > SCREEN_X_MAX
             || (top as i32) < 0
@@ -115,7 +105,7 @@ fn fully_offscreen(mut q: Query<(Entity, &Position, &Hitbox), Without<FullyOffsc
 
 fn going_offscreen(
     mut q: Query<
-        (Entity, &Position, &Hitbox, &Velocity),
+        (Entity, &PixelPosition, &Hitbox, &Velocity),
         (Without<FullyOffscreen>, Without<GoingOffscreen>),
     >,
     commands: &mut Commands,
@@ -124,13 +114,13 @@ fn going_offscreen(
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
         
 
-        let left_offscreen = (pos.x + hitbox.x - hitbox.width / 2. < 0.) && velocity.x < 0.0;
+        let left_offscreen = (pos.0.x + hitbox.x - hitbox.width / 2. < 0.) && velocity.x < 0.0;
         let right_offscreen =
-            (pos.x + hitbox.x + hitbox.width / 2. > SCREEN_X_MAX as f32) && velocity.x > 0.0;
-        let top_offscreen = (pos.y + hitbox.y - hitbox.height / 2. > SCREEN_Y_MAX as f32) && velocity.y > 0.0;
-        let bottom_offscreen = (pos.y + hitbox.y + hitbox.height / 2. < 0.0) && velocity.y < 0.0;
+            (pos.0.x + hitbox.x + hitbox.width / 2. > SCREEN_X_MAX as f32) && velocity.x > 0.0;
+        let top_offscreen = (pos.0.y + hitbox.y - hitbox.height / 2. > SCREEN_Y_MAX as f32) && velocity.y > 0.0;
+        let bottom_offscreen = (pos.0.y + hitbox.y + hitbox.height / 2. < 0.0) && velocity.y < 0.0;
         if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
-            ev_going_offscreen.send(GoingOffscreenEvent(entity, pos.y / SCALE / TILE_SIZE as f32));
+            ev_going_offscreen.send(GoingOffscreenEvent(entity, pos.0.y / TILE_SIZE as f32));
             commands.insert_one(entity, GoingOffscreen);
         }
     }
@@ -145,10 +135,10 @@ fn despawn_out_of_bounds(
     }
 }
 
-fn update_position(mut q: Query<(&Velocity, &mut Position)>, time: Res<Time>) {
+fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time>) {
     for (v, mut p) in q.iter_mut() {
-        p.x += v.x * SCALE * time.delta_seconds();
-        p.y += v.y * SCALE * time.delta_seconds();
+        p.0.x += v.x * time.delta_seconds();
+        p.0.y += v.y * time.delta_seconds();
     }
 }
 
