@@ -48,7 +48,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
         .spawn(SpriteBundle {
             material: m.suv_material,
             ..Default::default()
-        })
+        }) 
         .with(Car)
         .with(PixelPosition(Vec2::new(
             tile_pos.0.x * TILE_SIZE as f32, 
@@ -64,7 +64,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
 }
 
 fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>) {
-    let tile_pos = TilePosition(Vec2::new(0.1, 6.0));
+    let tile_pos = TilePosition(Vec2::new(-2.0, 6.0));
     spawn_car(commands, m.clone(), tile_pos)
 }
 
@@ -75,7 +75,7 @@ fn spawn_another_car(
     m: Res<Materials>,
 ) {
     for ev in event_reader.iter(&events) {
-        spawn_car(commands, m.clone(), TilePosition(Vec2::new(0.0, 0.1)));
+        spawn_car(commands, m.clone(), TilePosition(Vec2::new(-2.0, ev.1)));
     }
 }
 
@@ -87,7 +87,13 @@ fn position_translation(mut q: Query<(&PixelPosition, &mut Transform, &Sprite)>)
 
 struct FullyOffscreen;
 struct GoingOffscreen;
-fn fully_offscreen(mut q: Query<(Entity, &PixelPosition, &Hitbox), Without<FullyOffscreen>>, commands: &mut Commands) {
+fn fully_offscreen(
+    mut q: Query<
+        (Entity, &PixelPosition, &Hitbox), 
+        (With<GoingOffscreen>, Without<FullyOffscreen>)
+    >, 
+    commands: &mut Commands) 
+{
     for (entity, pos, hitbox) in q.iter_mut() {
         let left = pos.0.x + hitbox.x - hitbox.width / 2.;
         let right = pos.0.x + hitbox.x + hitbox.width / 2.;
@@ -112,8 +118,6 @@ fn going_offscreen(
     mut ev_going_offscreen: ResMut<Events<GoingOffscreenEvent>>,
 ) {
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
-        
-
         let left_offscreen = (pos.0.x + hitbox.x - hitbox.width / 2. < 0.) && velocity.x < 0.0;
         let right_offscreen =
             (pos.0.x + hitbox.x + hitbox.width / 2. > SCREEN_X_MAX as f32) && velocity.x > 0.0;
