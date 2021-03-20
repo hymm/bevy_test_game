@@ -90,7 +90,7 @@ struct GoingOffscreen;
 fn fully_offscreen(
     mut q: Query<
         (Entity, &PixelPosition, &Hitbox), 
-        (With<GoingOffscreen>, Without<FullyOffscreen>)
+        (With<GoingOffscreen>, Without<FullyOffscreen>, With<Car>)
     >, 
     commands: &mut Commands) 
 {
@@ -112,7 +112,7 @@ fn fully_offscreen(
 fn going_offscreen(
     mut q: Query<
         (Entity, &PixelPosition, &Hitbox, &Velocity),
-        (Without<FullyOffscreen>, Without<GoingOffscreen>),
+        (Without<FullyOffscreen>, Without<GoingOffscreen>, With<Car>),
     >,
     commands: &mut Commands,
     mut ev_going_offscreen: ResMut<Events<GoingOffscreenEvent>>,
@@ -139,7 +139,7 @@ fn despawn_out_of_bounds(
     }
 }
 
-fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time>) {
+fn update_position(mut q: Query<(&Velocity, &mut PixelPosition), With<Car>>, time: Res<Time>) {
     for (v, mut p) in q.iter_mut() {
         p.0.x += v.x * time.delta_seconds();
         p.0.y += v.y * time.delta_seconds();

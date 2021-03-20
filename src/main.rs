@@ -1,15 +1,16 @@
+#![allow(clippy::type_complexity)]
+
 use bevy::{
     input::system::exit_on_esc_system, 
     prelude::*,
-    render::camera::Camera,
 };
-
 
 mod consts;
 mod loader;
 mod map;
 mod car;
 mod coordinates;
+mod player;
 use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
@@ -32,12 +33,18 @@ fn main() {
         .add_plugin(loader::AssetsLoadingPlugin)
         .add_plugin(map::MapPlugin)
         .add_plugin(car::CarPlugin)
+        .add_plugin(player::PlayerPlugin)
         .run();
 }
 
-struct Player;
-
 fn setup(commands: &mut Commands, mut state: ResMut<State<AppState>>) {
+    // this code only works on 0.5
+//     let mut camera = OrthographicCameraBundle::new_2d();
+//     camera.orthographic_projection.window_origin = WindowOrigin::BottomLeft;
+//     camera.orthographic_projection.scaling_mode = ScalingMode::WindowSize;
+
+//     commands.spawn(camera);
+// }
     commands.spawn(Camera2dBundle {
         transform: Transform {
             translation: Vec3::new(64.0, 64.0, 0.0),
