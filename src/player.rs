@@ -1,4 +1,4 @@
-use crate::consts::{AppState, APP_STATE_STAGE};
+use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
 use bevy::prelude::*;
 
@@ -70,6 +70,13 @@ fn player_input(
             return;
         };
 
+        // limit player to screen bounds
+        if next_position.0.x < 0.0 || next_position.0.x > TILE_WIDTH - 1.0
+            || next_position.0.y < 0.0 || next_position.0.y > TILE_HEIGHT - 1.0
+        {
+            return;
+        }
+
         commands.insert_one(player, NextPosition(next_position));
         let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
         let next_translation = next_position.get_translation(Vec2::new(8.0, 8.0));
@@ -85,7 +92,10 @@ fn player_movement_done(
     for (player, next_position, transform, v) in player_query.iter_mut() {
         let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0)) - transform.translation;
         if diff.truncate().dot(v.0) <= 0.0  {
-            commands.insert_one(player, CurrentPosition(next_position.0));
+            let new_current_position = CurrentPosition(next_position.0);
+            let new_pixel_position = new_current_position.0.get_pixel_position();
+            commands.insert_one(player, new_current_position);
+            commands.insert_one(player, new_pixel_position);
             commands.remove_one::<Velocity>(player);
             commands.remove_one::<NextPosition>(player);
         }

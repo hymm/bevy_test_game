@@ -43,6 +43,7 @@ fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time
 }
 
 // TODO: add Changed<PixelPosition> here after upgrading to 5.0
+// TODO: figure out how to unify update_translation and update_translation_atlas_sprite
 fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform)>) {
     for (pos, sprite, mut transform) in q.iter_mut() {
         transform.translation = pos.get_translation(sprite.size);
