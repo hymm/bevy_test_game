@@ -1,106 +1,102 @@
-use bevy::prelude::*;
 use crate::consts::{AppState, APP_STATE_STAGE};
-use crate::coordinates::{PixelPosition, TilePosition};
+use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
+use bevy::prelude::*;
 
 #[derive(Clone, Default)]
 struct Materials {
     player_material: Handle<ColorMaterial>,
 }
 
+const PLAYER_SPEED: f32 = 60.0;
 struct Player;
 struct CurrentPosition(TilePosition);
 struct NextPosition(TilePosition);
-struct CurrentPixelPosition(PixelPosition);
-
-enum Direction {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT,
-  NONE,
-}
 
 fn setup_player(
-  commands: &mut Commands,
-  asset_server: Res<AssetServer>,
-  mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-  let texture_handle = asset_server.load("shoe_walk.png");
-  let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(8.0, 8.0), 4, 1);
-  let texture_atlas_handle = texture_atlases.add(texture_atlas);
-  let player_pos = TilePosition(Vec2::new(8.0, 8.0));
-  commands
-    .spawn(SpriteSheetBundle {
-      texture_atlas: texture_atlas_handle,
-      transform: Transform {
-        translation: player_pos.get_translation(Vec2::new(8.0, 8.0)),
-        ..Default::default()
-      },
-      ..Default::default()
-    })
-    .with(Player)
-    .with(CurrentPosition(player_pos));
+    let texture_handle = asset_server.load("shoe_walk.png");
+    let sprite_size = SpriteSize(Vec2::new(8.0, 8.0));
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 1);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let player_pos = TilePosition(Vec2::new(8.0, 8.0));
+    commands
+        .spawn(SpriteSheetBundle {
+            texture_atlas: texture_atlas_handle,
+            transform: Transform {
+                translation: player_pos.get_translation(Vec2::new(8.0, 8.0)),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .with(Player)
+        .with(CurrentPosition(player_pos))
+        .with(PixelPosition(player_pos.get_pixel_position().0))
+        .with(sprite_size);
 }
 
 fn player_input(
-  commands: &mut Commands,
-  keyboard_input: Res<Input<KeyCode>>,
-  player_query: Query<(Entity, &CurrentPosition), (With<Player>, Without<NextPosition>)>
+    commands: &mut Commands,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut player_query: Query<
+        (Entity, &CurrentPosition),
+        (With<Player>, Without<NextPosition>),
+    >,
 ) {
-  for (player, current_pos) in player_query.iter() {
-    let next = if keyboard_input.pressed(KeyCode::Left) {
-      TilePosition(Vec2::new(current_pos.0.0.x - 1.0, current_pos.0.0.y))
-    } else if keyboard_input.pressed(KeyCode::Right) {
-      TilePosition(Vec2::new(current_pos.0.0.x + 1.0, current_pos.0.0.y))
-    } else if keyboard_input.pressed(KeyCode::Up) {
-      TilePosition(Vec2::new(current_pos.0.0.x, current_pos.0.0.y + 1.0))
-    } else if keyboard_input.pressed(KeyCode::Down) {
-      TilePosition(Vec2::new(current_pos.0.0.x, current_pos.0.0.y - 1.0))
-    } else {
-      return;
-    };
+    for (player, current_position) in player_query.iter_mut() {
+        let next_position = if keyboard_input.pressed(KeyCode::Left) {
+            TilePosition(Vec2::new(
+                current_position.0 .0.x - 1.0,
+                current_position.0 .0.y,
+            ))
+        } else if keyboard_input.pressed(KeyCode::Right) {
+            TilePosition(Vec2::new(
+                current_position.0 .0.x + 1.0,
+                current_position.0 .0.y,
+            ))
+        } else if keyboard_input.pressed(KeyCode::Up) {
+            TilePosition(Vec2::new(
+                current_position.0 .0.x,
+                current_position.0 .0.y + 1.0,
+            ))
+        } else if keyboard_input.pressed(KeyCode::Down) {
+            TilePosition(Vec2::new(
+                current_position.0 .0.x,
+                current_position.0 .0.y - 1.0,
+            ))
+        } else {
+            return;
+        };
 
-    commands.insert_one(player, NextPosition(next));
-  }
+        commands.insert_one(player, NextPosition(next_position));
+        let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
+        let next_translation = next_position.get_translation(Vec2::new(8.0, 8.0));
+        let direction = (next_translation - current_translation).normalize();
+        commands.insert_one(player, Velocity(direction.truncate() * PLAYER_SPEED));
+    }
 }
 
-fn player_movement(
-  commands: &mut Commands,
-  mut player_query: Query<(Entity, &CurrentPosition, &NextPosition, &mut Transform), With<Player>>,
+fn player_movement_done(
+    commands: &mut Commands,
+    mut player_query: Query<(Entity, &NextPosition, &Transform, &Velocity), With<Player>>,
 ) {
-  // TODO: limit updating to 60 times / sec
-  for (player, current_position, next_position, mut transform) in player_query.iter_mut() {
-    let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
-    let next_translation = next_position.0.get_translation(Vec2::new(8.0, 8.0));
-    let direction = (next_translation - current_translation).normalize();
-    transform.translation =  (transform.translation + direction).round();
-
-    if transform.translation == next_translation {
-      commands.insert_one(player, CurrentPosition(next_position.0));
-      commands.remove_one::<NextPosition>(player);
+    for (player, next_position, transform, v) in player_query.iter_mut() {
+        let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0)) - transform.translation;
+        if diff.truncate().dot(v.0) <= 0.0  {
+            commands.insert_one(player, CurrentPosition(next_position.0));
+            commands.remove_one::<Velocity>(player);
+            commands.remove_one::<NextPosition>(player);
+        }
     }
-  }
 }
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
-  fn build(&self, app: &mut AppBuilder) {
-    app
-      .on_state_enter(
-        APP_STATE_STAGE,
-        AppState::Loading,
-        setup_player.system(),
-      )
-      .on_state_update(
-        APP_STATE_STAGE,
-        AppState::InGame,
-        player_input.system(),
-      )
-      .on_state_update(
-        APP_STATE_STAGE,
-        AppState::InGame,
-        player_movement.system(),
-      );
-  }
+    fn build(&self, app: &mut AppBuilder) {
+        app.on_state_enter(APP_STATE_STAGE, AppState::Loading, setup_player.system())
+            .on_state_update(APP_STATE_STAGE, AppState::InGame, player_input.system())
+            .on_state_update(APP_STATE_STAGE, AppState::InGame, player_movement_done.system());
+    }
 }
-

@@ -1,6 +1,6 @@
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
-use bevy::prelude::*;
 use crate::coordinates::TilePosition;
+use bevy::prelude::*;
 
 struct MapRow {
     sprite: u32,
@@ -68,7 +68,12 @@ fn load_map_atlas(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let texture_handle = asset_server.get_handle("map_tiles.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32), 4, 3);
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handle,
+        Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
+        4,
+        3,
+    );
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     for r in 0..map.rows.len() {
@@ -77,7 +82,8 @@ fn load_map_atlas(
             commands.spawn(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform {
-                    translation: TilePosition(Vec2::new(c as f32, r as f32)).get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
+                    translation: TilePosition(Vec2::new(c as f32, r as f32))
+                        .get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
                     ..Default::default()
                 },
                 sprite: spr,
@@ -90,7 +96,8 @@ fn load_map_atlas(
     commands.spawn(SpriteBundle {
         material: materials.add(house_handle.into()),
         transform: Transform {
-            translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y)).get_translation(Vec2::new(16., 16.)),
+            translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
+                .get_translation(Vec2::new(16., 16.)),
             ..Default::default()
         },
         ..Default::default()
@@ -100,7 +107,8 @@ fn load_map_atlas(
     commands.spawn(SpriteBundle {
         material: materials.add(bus_stop_handle.into()),
         transform: Transform {
-            translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y)).get_translation(Vec2::new(16., 16.)),
+            translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
+                .get_translation(Vec2::new(16., 16.)),
             ..Default::default()
         },
         ..Default::default()
