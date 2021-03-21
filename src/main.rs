@@ -3,6 +3,7 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 
 mod car;
+mod collisions;
 mod consts;
 mod coordinates;
 mod loader;
@@ -29,6 +30,7 @@ fn main() {
         .on_state_enter(APP_STATE_STAGE, AppState::Setup, setup.system())
         .add_plugin(loader::AssetsLoadingPlugin)
         .add_plugin(coordinates::MovementPlugin)
+        .add_plugin(collisions::CollisionPlugin)
         .add_plugin(map::MapPlugin)
         .add_plugin(car::CarPlugin)
         .add_plugin(player::PlayerPlugin)

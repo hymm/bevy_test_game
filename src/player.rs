@@ -1,3 +1,4 @@
+use crate::collisions::Hurtbox;
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
 use bevy::prelude::*;
@@ -34,16 +35,14 @@ fn setup_player(
         .with(Player)
         .with(CurrentPosition(player_pos))
         .with(PixelPosition(player_pos.get_pixel_position().0))
-        .with(sprite_size);
+        .with(sprite_size)
+        .with(Hurtbox::new(Vec2::new(-4.0, -4.0), Vec2::new(7.0, 8.0)));
 }
 
 fn player_input(
     commands: &mut Commands,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<
-        (Entity, &CurrentPosition),
-        (With<Player>, Without<NextPosition>),
-    >,
+    mut player_query: Query<(Entity, &CurrentPosition), (With<Player>, Without<NextPosition>)>,
 ) {
     for (player, current_position) in player_query.iter_mut() {
         let next_position = if keyboard_input.pressed(KeyCode::Left) {
@@ -71,8 +70,10 @@ fn player_input(
         };
 
         // limit player to screen bounds
-        if next_position.0.x < 0.0 || next_position.0.x > TILE_WIDTH - 1.0
-            || next_position.0.y < 0.0 || next_position.0.y > TILE_HEIGHT - 1.0
+        if next_position.0.x < 0.0
+            || next_position.0.x > TILE_WIDTH - 1.0
+            || next_position.0.y < 0.0
+            || next_position.0.y > TILE_HEIGHT - 1.0
         {
             return;
         }
@@ -91,7 +92,7 @@ fn player_movement_done(
 ) {
     for (player, next_position, transform, v) in player_query.iter_mut() {
         let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0)) - transform.translation;
-        if diff.truncate().dot(v.0) <= 0.0  {
+        if diff.truncate().dot(v.0) <= 0.0 {
             let new_current_position = CurrentPosition(next_position.0);
             let new_pixel_position = new_current_position.0.get_pixel_position();
             commands.insert_one(player, new_current_position);
@@ -107,6 +108,10 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.on_state_enter(APP_STATE_STAGE, AppState::Loading, setup_player.system())
             .on_state_update(APP_STATE_STAGE, AppState::InGame, player_input.system())
-            .on_state_update(APP_STATE_STAGE, AppState::InGame, player_movement_done.system());
+            .on_state_update(
+                APP_STATE_STAGE,
+                AppState::InGame,
+                player_movement_done.system(),
+            );
     }
 }
