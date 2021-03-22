@@ -1,6 +1,7 @@
-use crate::collisions::Hurtbox;
+use crate::collisions::{Hurtbox, CollisionEvent};
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
+use crate::car::Car;
 use bevy::prelude::*;
 
 #[derive(Clone, Default)]
@@ -9,9 +10,15 @@ struct Materials {
 }
 
 const PLAYER_SPEED: f32 = 60.0;
-struct Player;
+pub struct Player;
 struct CurrentPosition(TilePosition);
 struct NextPosition(TilePosition);
+
+// enum PlayerStates {
+//     Idle,
+//     Walking,
+//     Rolling,
+// } 
 
 fn setup_player(
     commands: &mut Commands,
@@ -103,6 +110,22 @@ fn player_movement_done(
     }
 }
 
+fn player_collides_car(
+    commands: &mut Commands,
+    events: Res<Events<CollisionEvent<Player, Car>>>,
+    mut event_reader: Local<EventReader<CollisionEvent<Player, Car>>>,
+    mut player_query: Query<(Entity, &mut PixelPosition, &mut CurrentPosition), With<Player>>
+) {
+    if event_reader.iter(&events).next().is_some()  {
+        for (player, mut pixel_position, mut current_position) in player_query.iter_mut() {
+            let spawn_pos = TilePosition(Vec2::new(4.0, 4.0));
+            current_position.0 = spawn_pos;
+            *pixel_position = spawn_pos.get_pixel_position();
+            commands.remove_one::<NextPosition>(player);
+        }
+    }
+}
+
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -112,6 +135,11 @@ impl Plugin for PlayerPlugin {
                 APP_STATE_STAGE,
                 AppState::InGame,
                 player_movement_done.system(),
+            )
+            .on_state_update(
+                APP_STATE_STAGE,
+                AppState::InGame,
+                player_collides_car.system(),
             );
     }
 }

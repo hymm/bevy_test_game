@@ -1,8 +1,11 @@
+use crate::car::Car;
 use crate::consts::{AppState, APP_STATE_STAGE};
+use crate::player::Player;
 use bevy::{
     prelude::*,
     sprite::collide_aabb::{collide, Collision},
 };
+use std::marker::PhantomData;
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct Box {
@@ -52,21 +55,39 @@ impl std::ops::Deref for Hitbox {
 // 1. player collides with wall
 // 2. player collides with car
 // 3. player collides with goal
+pub struct CollisionData {
+    collided_with: Entity,
+    collision: Collision,
+}
+pub struct CollisionEvent<S, T>(CollisionData, PhantomData<S>, PhantomData<T>);
+impl<S, T> CollisionEvent<S, T> {
+    fn new(data: CollisionData) -> Self {
+        Self(data, PhantomData, PhantomData)
+    }
+}
 
 fn collision_system(
-    hitboxes: Query<(&Hitbox, &Transform)>,
-    hurtboxes: Query<(&Hurtbox, &Transform)>,
+    hurtboxes: Query<(&Hurtbox, &Transform, Option<&Player>)>,
+    hitboxes: Query<(&Hitbox, &Transform, Entity, Option<&Car>)>,
+    mut ev_player_hitby_car: ResMut<Events<CollisionEvent<Player, Car>>>,
 ) {
-    for (hurtbox, hurt_transform) in hurtboxes.iter() {
+    for (hurtbox, hurt_transform, player) in hurtboxes.iter() {
         let hurt_top_left = hurt_transform.translation + hurtbox.offset.extend(0.0);
         let hurt_size = hurtbox.size;
 
-        for (hitbox, hit_transform) in hitboxes.iter() {
+        for (hitbox, hit_transform, hit_entity, car) in hitboxes.iter() {
             let hit_top_left = hit_transform.translation + hitbox.offset.extend(0.0);
-            let hit_size = hitbox.size;
+            let hit_size = hitbox.size; 
 
             if let Some(collision) = collide(hurt_top_left, hurt_size, hit_top_left, hit_size) {
-                dbg!("collision");
+                if player.is_some() && car.is_some() {
+                    ev_player_hitby_car.send(CollisionEvent::new(
+                        CollisionData {
+                            collided_with: hit_entity,
+                            collision,
+                        }
+                    ));
+                }
             }
         }
     }
@@ -75,6 +96,7 @@ fn collision_system(
 pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.on_state_update(APP_STATE_STAGE, AppState::InGame, collision_system.system());
+        app.add_event::<CollisionEvent<Player, Car>>()
+            .on_state_update(APP_STATE_STAGE, AppState::InGame, collision_system.system());
     }
 }

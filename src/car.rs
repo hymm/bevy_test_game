@@ -3,7 +3,7 @@ use crate::consts::{AppState, APP_STATE_STAGE, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_
 use crate::coordinates::{PixelPosition, TilePosition, Velocity};
 use bevy::prelude::*;
 
-struct Car;
+pub struct Car;
 struct GoingOffscreenEvent(Entity, f32);
 
 #[derive(Clone, Default)]
@@ -84,11 +84,13 @@ fn going_offscreen(
     mut ev_going_offscreen: ResMut<Events<GoingOffscreenEvent>>,
 ) {
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
-        let left_offscreen = (pos.0.x + hitbox.offset.x - hitbox.size.x / 2. < 0.) && velocity.0.x < 0.0;
-        let right_offscreen =
-            (pos.0.x + hitbox.offset.x + hitbox.size.x / 2. > SCREEN_X_MAX as f32) && velocity.0.x > 0.0;
-        let top_offscreen =
-            (pos.0.y + hitbox.offset.y - hitbox.size.y / 2. > SCREEN_Y_MAX as f32) && velocity.0.y > 0.0;
+        let left_offscreen =
+            (pos.0.x + hitbox.offset.x - hitbox.size.x / 2. < 0.) && velocity.0.x < 0.0;
+        let right_offscreen = (pos.0.x + hitbox.offset.x + hitbox.size.x / 2.
+            > SCREEN_X_MAX as f32)
+            && velocity.0.x > 0.0;
+        let top_offscreen = (pos.0.y + hitbox.offset.y - hitbox.size.y / 2. > SCREEN_Y_MAX as f32)
+            && velocity.0.y > 0.0;
         let bottom_offscreen =
             (pos.0.y + hitbox.offset.y + hitbox.offset.y / 2. < 0.0) && velocity.0.y < 0.0;
         if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
