@@ -124,6 +124,7 @@ fn player_collides_car(
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             current_position.0 = spawn_pos;
             *pixel_position = spawn_pos.get_pixel_position();
+            commands.remove_one::<Velocity>(player);
             commands.remove_one::<NextPosition>(player);
         }
     }
