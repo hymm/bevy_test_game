@@ -36,8 +36,8 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
 }
 
 fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>) {
-    let tile_pos = TilePosition(Vec2::new(-2.0, 6.0));
-    spawn_car(commands, m.clone(), tile_pos)
+    spawn_car(commands, m.clone(), TilePosition(Vec2::new(-2.0, 8.0)));
+    spawn_car(commands, m.clone(), TilePosition(Vec2::new(7.0, 7.0)));
 }
 
 fn spawn_another_car(

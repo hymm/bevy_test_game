@@ -2,6 +2,7 @@ use crate::collisions::{Hurtbox, CollisionEvent};
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
 use crate::car::Car;
+use crate::map::Map;
 use bevy::prelude::*;
 
 #[derive(Clone, Default)]
@@ -24,12 +25,13 @@ fn setup_player(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    map: Res<Map>,
 ) {
     let texture_handle = asset_server.load("shoe_walk.png");
     let sprite_size = SpriteSize(Vec2::new(8.0, 8.0));
     let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 1);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
-    let player_pos = TilePosition(Vec2::new(8.0, 8.0));
+    let player_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
     commands
         .spawn(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
@@ -114,11 +116,12 @@ fn player_collides_car(
     commands: &mut Commands,
     events: Res<Events<CollisionEvent<Player, Car>>>,
     mut event_reader: Local<EventReader<CollisionEvent<Player, Car>>>,
-    mut player_query: Query<(Entity, &mut PixelPosition, &mut CurrentPosition), With<Player>>
+    mut player_query: Query<(Entity, &mut PixelPosition, &mut CurrentPosition), With<Player>>,
+    map: Res<Map>,
 ) {
     if event_reader.iter(&events).next().is_some()  {
         for (player, mut pixel_position, mut current_position) in player_query.iter_mut() {
-            let spawn_pos = TilePosition(Vec2::new(4.0, 4.0));
+            let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             current_position.0 = spawn_pos;
             *pixel_position = spawn_pos.get_pixel_position();
             commands.remove_one::<NextPosition>(player);

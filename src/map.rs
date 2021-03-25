@@ -2,69 +2,73 @@ use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
 use crate::coordinates::TilePosition;
 use bevy::prelude::*;
 
-struct MapRow {
+pub struct MapRow {
     sprite: u32,
 }
 
-struct House {
-    tile_x: f32,
-    tile_y: f32,
+pub struct House {
+    pub tile_x: f32,
+    pub tile_y: f32,
 }
 
-struct BusStop {
-    tile_x: f32,
-    tile_y: f32,
+pub struct BusStop {
+    pub tile_x: f32,
+    pub tile_y: f32,
 }
 
-struct Map {
-    rows: [MapRow; 16],
-    house: House,
-    bus_stop: BusStop,
+pub struct Map {
+    pub rows: [MapRow; 16],
+    pub house: House,
+    pub bus_stop: BusStop,
     // cars: Vec<Car>,
 }
-
-const map: Map = Map {
-    rows: [
-        MapRow { sprite: 0 },
-        MapRow { sprite: 1 },
-        MapRow { sprite: 2 },
-        MapRow { sprite: 3 },
-        MapRow { sprite: 4 },
-        MapRow { sprite: 5 },
-        MapRow { sprite: 6 },
-        MapRow { sprite: 7 },
-        MapRow { sprite: 8 },
-        MapRow { sprite: 9 },
-        MapRow { sprite: 10 },
-        MapRow { sprite: 11 },
-        MapRow { sprite: 0 },
-        MapRow { sprite: 1 },
-        MapRow { sprite: 2 },
-        MapRow { sprite: 3 },
-    ],
-    house: House {
-        tile_x: 0.5,
-        tile_y: 0.5,
-    },
-    bus_stop: BusStop {
-        tile_x: 14.5,
-        tile_y: 14.5,
-    },
-    /*cars: vec![
-        Car {
-            x: 0,
-            y: 0,
-            speed: 0.5,
-            hitbox_width: 13,
+impl FromResources for Map {
+    fn from_resources(_: &Resources) -> Self {
+        Map {
+            rows: [
+                MapRow { sprite: 0 },
+                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 3 },
+                MapRow { sprite: 11 },
+                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 1 },
+            ],
+            house: House {
+                tile_x: 7.0,
+                tile_y: 10.0,
+            },
+            bus_stop: BusStop {
+                tile_x: 7.0,
+                tile_y: 5.0,
+            },
+            /*cars: vec![
+                Car {
+                    x: 0,
+                    y: 0,
+                    speed: 0.5,
+                    hitbox_width: 13,
+                }
+            ]*/
         }
-    ]*/
-};
+    }
+}
 
 fn load_map_atlas(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<AppState>>,
+    map: Res<Map>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let texture_handle = asset_server.get_handle("map_tiles.png");
@@ -82,7 +86,7 @@ fn load_map_atlas(
             commands.spawn(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform {
-                    translation: TilePosition(Vec2::new(c as f32, r as f32))
+                    translation: TilePosition(Vec2::new(c as f32, (15 - r) as f32))
                         .get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
                     ..Default::default()
                 },
@@ -119,6 +123,6 @@ fn load_map_atlas(
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.on_state_enter(APP_STATE_STAGE, AppState::Loading, load_map_atlas.system());
+        app.init_resource::<Map>().on_state_enter(APP_STATE_STAGE, AppState::Loading, load_map_atlas.system());
     }
 }
