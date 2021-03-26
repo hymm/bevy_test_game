@@ -77,16 +77,14 @@ fn collision_system(
 
         for (hitbox, hit_transform, hit_entity, car) in hitboxes.iter() {
             let hit_top_left = hit_transform.translation + hitbox.offset.extend(0.0);
-            let hit_size = hitbox.size; 
+            let hit_size = hitbox.size;
 
             if let Some(collision) = collide(hurt_top_left, hurt_size, hit_top_left, hit_size) {
                 if player.is_some() && car.is_some() {
-                    ev_player_hitby_car.send(CollisionEvent::new(
-                        CollisionData {
-                            collided_with: hit_entity,
-                            collision,
-                        }
-                    ));
+                    ev_player_hitby_car.send(CollisionEvent::new(CollisionData {
+                        collided_with: hit_entity,
+                        collision,
+                    }));
                 }
             }
         }

@@ -1,7 +1,7 @@
-use crate::collisions::{Hurtbox, CollisionEvent};
+use crate::car::Car;
+use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
-use crate::car::Car;
 use crate::map::Map;
 use bevy::prelude::*;
 
@@ -19,7 +19,7 @@ struct NextPosition(TilePosition);
 //     Idle,
 //     Walking,
 //     Rolling,
-// } 
+// }
 
 fn setup_player(
     commands: &mut Commands,
@@ -119,7 +119,7 @@ fn player_collides_car(
     mut player_query: Query<(Entity, &mut PixelPosition, &mut CurrentPosition), With<Player>>,
     map: Res<Map>,
 ) {
-    if event_reader.iter(&events).next().is_some()  {
+    if event_reader.iter(&events).next().is_some() {
         for (player, mut pixel_position, mut current_position) in player_query.iter_mut() {
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             current_position.0 = spawn_pos;

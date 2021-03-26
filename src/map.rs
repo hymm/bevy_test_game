@@ -16,11 +16,16 @@ pub struct BusStop {
     pub tile_y: f32,
 }
 
+pub struct CarData {
+    pub tile_position: TilePosition,
+    pub speed: f32,
+}
+
 pub struct Map {
     pub rows: [MapRow; 16],
     pub house: House,
     pub bus_stop: BusStop,
-    // cars: Vec<Car>,
+    pub cars: Vec<CarData>,
 }
 impl FromResources for Map {
     fn from_resources(_: &Resources) -> Self {
@@ -51,14 +56,16 @@ impl FromResources for Map {
                 tile_x: 7.0,
                 tile_y: 5.0,
             },
-            /*cars: vec![
-                Car {
-                    x: 0,
-                    y: 0,
-                    speed: 0.5,
-                    hitbox_width: 13,
-                }
-            ]*/
+            cars: vec![
+                CarData {
+                    tile_position: TilePosition(Vec2::new(-2.0, 8.0)),
+                    speed: 30.0,
+                },
+                CarData {
+                    tile_position: TilePosition(Vec2::new(7.0, 7.0)),
+                    speed: -30.0,
+                },
+            ],
         }
     }
 }
@@ -123,6 +130,10 @@ fn load_map_atlas(
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Map>().on_state_enter(APP_STATE_STAGE, AppState::Loading, load_map_atlas.system());
+        app.init_resource::<Map>().on_state_enter(
+            APP_STATE_STAGE,
+            AppState::Loading,
+            load_map_atlas.system(),
+        );
     }
 }

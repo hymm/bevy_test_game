@@ -1,10 +1,11 @@
 use crate::collisions::Hitbox;
 use crate::consts::{AppState, APP_STATE_STAGE, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
 use crate::coordinates::{PixelPosition, TilePosition, Velocity};
+use crate::map::Map;
 use bevy::prelude::*;
 
 pub struct Car;
-struct GoingOffscreenEvent(Entity, f32);
+struct GoingOffscreenEvent(Entity, f32, f32);
 
 #[derive(Clone, Default)]
 struct Materials {
@@ -20,7 +21,7 @@ fn store_car_material(
     m.suv_material = materials.add(handle.into());
 }
 
-fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
+fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, speed: f32) {
     commands
         .spawn(SpriteBundle {
             material: m.suv_material,
@@ -31,13 +32,14 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition) {
             tile_pos.0.x * TILE_SIZE as f32,
             tile_pos.0.y * TILE_SIZE as f32,
         )))
-        .with(Velocity(Vec2::new(30.0, 0.0))) // pixels per second
+        .with(Velocity(Vec2::new(speed, 0.0))) // pixels per second
         .with(Hitbox::new(Vec2::new(-7.0, -4.0), Vec2::new(14.0, 8.0)));
 }
 
-fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>) {
-    spawn_car(commands, m.clone(), TilePosition(Vec2::new(-2.0, 8.0)));
-    spawn_car(commands, m.clone(), TilePosition(Vec2::new(7.0, 7.0)));
+fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>, map: Res<Map>) {
+    for car_data in map.cars.iter() {
+        spawn_car(commands, m.clone(), car_data.tile_position, car_data.speed);
+    }
 }
 
 fn spawn_another_car(
@@ -47,7 +49,7 @@ fn spawn_another_car(
     m: Res<Materials>,
 ) {
     for ev in event_reader.iter(&events) {
-        spawn_car(commands, m.clone(), TilePosition(Vec2::new(-2.0, ev.1)));
+        spawn_car(commands, m.clone(), TilePosition(Vec2::new(-2.0, ev.1)), ev.2);
     }
 }
 
@@ -94,7 +96,7 @@ fn going_offscreen(
         let bottom_offscreen =
             (pos.0.y + hitbox.offset.y + hitbox.offset.y / 2. < 0.0) && velocity.0.y < 0.0;
         if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
-            ev_going_offscreen.send(GoingOffscreenEvent(entity, pos.0.y / TILE_SIZE as f32));
+            ev_going_offscreen.send(GoingOffscreenEvent(entity, pos.0.y / TILE_SIZE as f32, velocity.0.x));
             commands.insert_one(entity, GoingOffscreen);
         }
     }
