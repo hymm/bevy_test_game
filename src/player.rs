@@ -45,7 +45,7 @@ fn setup_player(
         .with(CurrentPosition(player_pos))
         .with(PixelPosition(player_pos.get_pixel_position().0))
         .with(sprite_size)
-        .with(Hurtbox::new(Vec2::new(-4.0, -4.0), Vec2::new(7.0, 8.0)));
+        .with(Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)));
 }
 
 fn player_input(

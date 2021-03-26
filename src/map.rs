@@ -62,7 +62,7 @@ impl FromResources for Map {
                     speed: 30.0,
                 },
                 CarData {
-                    tile_position: TilePosition(Vec2::new(7.0, 7.0)),
+                    tile_position: TilePosition(Vec2::new(16.0, 7.0)),
                     speed: -30.0,
                 },
             ],

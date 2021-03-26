@@ -33,7 +33,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
             tile_pos.0.y * TILE_SIZE as f32,
         )))
         .with(Velocity(Vec2::new(speed, 0.0))) // pixels per second
-        .with(Hitbox::new(Vec2::new(-7.0, -4.0), Vec2::new(14.0, 8.0)));
+        .with(Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)));
 }
 
 fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>, map: Res<Map>) {
@@ -49,7 +49,12 @@ fn spawn_another_car(
     m: Res<Materials>,
 ) {
     for ev in event_reader.iter(&events) {
-        spawn_car(commands, m.clone(), TilePosition(Vec2::new(-2.0, ev.1)), ev.2);
+        let spawn_x = if ev.2 < 0.0 {
+            16.0
+        } else {
+            -2.0
+        };
+        spawn_car(commands, m.clone(), TilePosition(Vec2::new(spawn_x, ev.1)), ev.2);
     }
 }
 
@@ -63,10 +68,10 @@ fn fully_offscreen(
     commands: &mut Commands,
 ) {
     for (entity, pos, hitbox) in q.iter_mut() {
-        let left = pos.0.x + hitbox.offset.x - hitbox.size.x / 2.;
-        let right = pos.0.x + hitbox.offset.x + hitbox.size.x / 2.;
-        let top = pos.0.y + hitbox.offset.y - hitbox.size.y / 2.;
-        let bottom = pos.0.y + hitbox.offset.y + hitbox.size.y / 2.;
+        let left = pos.0.x;
+        let right = pos.0.x + hitbox.size.x;
+        let top = pos.0.y;
+        let bottom = pos.0.y + hitbox.size.y;
         if (right as i32) < 0
             || (left as i32) > SCREEN_X_MAX
             || (top as i32) < 0
@@ -87,14 +92,14 @@ fn going_offscreen(
 ) {
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
         let left_offscreen =
-            (pos.0.x + hitbox.offset.x - hitbox.size.x / 2. < 0.) && velocity.0.x < 0.0;
-        let right_offscreen = (pos.0.x + hitbox.offset.x + hitbox.size.x / 2.
+            (pos.0.x < 0.) && velocity.0.x < 0.0;
+        let right_offscreen = (pos.0.x + hitbox.size.x
             > SCREEN_X_MAX as f32)
             && velocity.0.x > 0.0;
-        let top_offscreen = (pos.0.y + hitbox.offset.y - hitbox.size.y / 2. > SCREEN_Y_MAX as f32)
+        let top_offscreen = (pos.0.y > SCREEN_Y_MAX as f32)
             && velocity.0.y > 0.0;
         let bottom_offscreen =
-            (pos.0.y + hitbox.offset.y + hitbox.offset.y / 2. < 0.0) && velocity.0.y < 0.0;
+            (pos.0.y + hitbox.size.y < 0.0) && velocity.0.y < 0.0;
         if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
             ev_going_offscreen.send(GoingOffscreenEvent(entity, pos.0.y / TILE_SIZE as f32, velocity.0.x));
             commands.insert_one(entity, GoingOffscreen);
