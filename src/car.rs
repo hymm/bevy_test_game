@@ -25,6 +25,10 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
     commands
         .spawn(SpriteBundle {
             material: m.suv_material,
+            transform: Transform {
+                scale: Vec3::new(if speed < 0.0 {-1.0} else {1.0}, 1.0, 1.0),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .with(Car)
