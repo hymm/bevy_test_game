@@ -9,6 +9,7 @@ mod coordinates;
 mod loader;
 mod map;
 mod player;
+mod animation;
 use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
@@ -27,6 +28,7 @@ fn main() {
             APP_STATE_STAGE,
             StateStage::<AppState>::default(),
         )
+        .add_system(animation::sprite_animation_system.system())
         .on_state_enter(APP_STATE_STAGE, AppState::Setup, setup.system())
         .add_plugin(loader::AssetsLoadingPlugin)
         .add_plugin(coordinates::MovementPlugin)

@@ -3,6 +3,7 @@ use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
 use crate::map::Map;
+use crate::animation::{Animations, Animation, AnimationFrame, Animator};
 use bevy::prelude::*;
 
 #[derive(Clone, Default)]
@@ -15,11 +16,11 @@ pub struct Player;
 struct CurrentPosition(TilePosition);
 struct NextPosition(TilePosition);
 
-// enum PlayerStates {
-//     Idle,
-//     Walking,
-//     Rolling,
-// }
+enum PlayerStates {
+    Idle,
+    Walking,
+    Rolling,
+}
 
 fn setup_player(
     commands: &mut Commands,
@@ -27,14 +28,14 @@ fn setup_player(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     map: Res<Map>,
 ) {
-    let texture_handle = asset_server.load("shoe_walk.png");
+    let texture_handle = asset_server.load("shoe_animation.png");
     let sprite_size = SpriteSize(Vec2::new(8.0, 8.0));
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 1);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
     commands
         .spawn(SpriteSheetBundle {
-            texture_atlas: texture_atlas_handle,
+            texture_atlas: texture_atlas_handle.clone(),
             transform: Transform {
                 translation: player_pos.get_translation(Vec2::new(8.0, 8.0)),
                 ..Default::default()
@@ -45,7 +46,30 @@ fn setup_player(
         .with(CurrentPosition(player_pos))
         .with(PixelPosition(player_pos.get_pixel_position().0))
         .with(sprite_size)
-        .with(Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)));
+        .with(Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)))
+        .with(Animator {
+            current_animation: 0,
+            current_frame: 0,
+            timer: Timer::new(Default::default(), false),
+        })
+        .with(Animations {
+            animations: vec![
+                // idle animation 
+                Animation {
+                    frames: vec![
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 0, duration: 3.0 - 1.0 / 6.0 },
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 3, duration: 1.0 / 6.0 }
+                    ]
+                },
+                // walk animation
+                Animation { 
+                    frames: vec![
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 1, duration: 1.0 / 15.0 },
+                        AnimationFrame { atlas_handle: texture_atlas_handle, atlas_index: 2, duration: 1.0 / 15.0 }
+                    ]
+                },
+            ]
+        });
 }
 
 fn player_input(
