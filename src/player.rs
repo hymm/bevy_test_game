@@ -49,6 +49,7 @@ fn setup_player(
         .with(Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)))
         .with(Animator {
             current_animation: 0,
+            last_animation: 0,
             current_frame: 0,
             timer: Timer::new(Default::default(), false),
         })
@@ -65,9 +66,18 @@ fn setup_player(
                 Animation { 
                     frames: vec![
                         AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 1, duration: 1.0 / 15.0 },
-                        AnimationFrame { atlas_handle: texture_atlas_handle, atlas_index: 2, duration: 1.0 / 15.0 }
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 2, duration: 1.0 / 15.0 }
                     ]
                 },
+                // rolling animation
+                Animation {
+                    frames: vec![
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 4, duration: 1.0 / 15.0 },
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 5, duration: 1.0 / 15.0 },
+                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 6, duration: 1.0 / 15.0 },
+                        AnimationFrame { atlas_handle: texture_atlas_handle, atlas_index: 7, duration: 1.0 / 15.0 }
+                    ]
+                }
             ]
         });
 }
@@ -75,9 +85,9 @@ fn setup_player(
 fn player_input(
     commands: &mut Commands,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(Entity, &CurrentPosition), (With<Player>, Without<NextPosition>)>,
+    mut player_query: Query<(Entity, &CurrentPosition, &mut Animator), (With<Player>, Without<NextPosition>)>,
 ) {
-    for (player, current_position) in player_query.iter_mut() {
+    for (player, current_position, mut animator) in player_query.iter_mut() {
         let next_position = if keyboard_input.pressed(KeyCode::Left) {
             TilePosition(Vec2::new(
                 current_position.0 .0.x - 1.0,
@@ -110,7 +120,9 @@ fn player_input(
         {
             return;
         }
-
+        
+        animator.current_animation = 1;
+        animator.current_frame = 0;
         commands.insert_one(player, NextPosition(next_position));
         let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
         let next_translation = next_position.get_translation(Vec2::new(8.0, 8.0));
@@ -121,9 +133,9 @@ fn player_input(
 
 fn player_movement_done(
     commands: &mut Commands,
-    mut player_query: Query<(Entity, &NextPosition, &Transform, &Velocity), With<Player>>,
+    mut player_query: Query<(Entity, &NextPosition, &Transform, &Velocity, &mut Animator), With<Player>>,
 ) {
-    for (player, next_position, transform, v) in player_query.iter_mut() {
+    for (player, next_position, transform, v, mut animator) in player_query.iter_mut() {
         let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0)) - transform.translation;
         if diff.truncate().dot(v.0) <= 0.0 {
             let new_current_position = CurrentPosition(next_position.0);
@@ -132,6 +144,8 @@ fn player_movement_done(
             commands.insert_one(player, new_pixel_position);
             commands.remove_one::<Velocity>(player);
             commands.remove_one::<NextPosition>(player);
+            animator.current_animation = 0;
+            animator.current_frame = 0;
         }
     }
 }
@@ -140,16 +154,20 @@ fn player_collides_car(
     commands: &mut Commands,
     events: Res<Events<CollisionEvent<Player, Car>>>,
     mut event_reader: Local<EventReader<CollisionEvent<Player, Car>>>,
-    mut player_query: Query<(Entity, &mut PixelPosition, &mut CurrentPosition), With<Player>>,
+    mut player_query: Query<(Entity, &mut Animator, &CurrentPosition), With<Player>>,
     map: Res<Map>,
 ) {
     if event_reader.iter(&events).next().is_some() {
-        for (player, mut pixel_position, mut current_position) in player_query.iter_mut() {
+        for (player, mut animator, current_position) in player_query.iter_mut() {
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
-            current_position.0 = spawn_pos;
-            *pixel_position = spawn_pos.get_pixel_position();
-            commands.remove_one::<Velocity>(player);
-            commands.remove_one::<NextPosition>(player);
+            commands.insert_one(player, NextPosition(spawn_pos));
+            
+            let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
+            let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0));
+            let direction = (next_translation - current_translation).normalize();
+            commands.insert_one(player, Velocity(direction.truncate() * PLAYER_SPEED));
+            animator.current_animation = 2;
+            animator.current_frame = 0;
         }
     }
 }

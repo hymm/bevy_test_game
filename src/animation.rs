@@ -1,8 +1,9 @@
+// heavily borrowed from https://github.com/bevyengine/bevy/pull/1770/files
+
 use bevy::asset::Handle;
 use bevy::sprite::{TextureAtlas, TextureAtlasSprite};
 use bevy::core::{Time, Timer};
 use bevy::ecs::prelude::{Query, Res};
-
 
 pub struct AnimationFrame {
   pub atlas_handle: Handle<TextureAtlas>,
@@ -20,6 +21,7 @@ pub struct Animations {
 
 pub struct Animator {
   pub current_animation: usize,
+  pub last_animation: usize,
   pub current_frame: usize,
   pub timer: Timer,
 }
@@ -31,9 +33,10 @@ pub fn sprite_animation_system(
   for (animations, mut animator, mut atlas, mut sprite) in &mut query.iter_mut() {
     animator.timer.tick(time.delta_seconds());
 
-    if !animator.timer.finished() {
+    if !animator.timer.finished() && animator.last_animation == animator.current_animation {
       break;
     }
+    animator.last_animation = animator.current_animation;
 
     if let Some(animation) = animations.animations.get(animator.current_animation) {
       animator.current_frame = if animator.current_frame + 1 < animation.frames.len() {
