@@ -1,9 +1,9 @@
+use crate::animation::{Animation, AnimationFrame, Animations, Animator};
 use crate::car::Car;
 use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
 use crate::map::Map;
-use crate::animation::{Animations, Animation, AnimationFrame, Animator};
 use bevy::prelude::*;
 
 #[derive(Clone, Default)]
@@ -15,12 +15,6 @@ const PLAYER_SPEED: f32 = 60.0;
 pub struct Player;
 struct CurrentPosition(TilePosition);
 struct NextPosition(TilePosition);
-
-enum PlayerStates {
-    Idle,
-    Walking,
-    Rolling,
-}
 
 fn setup_player(
     commands: &mut Commands,
@@ -55,37 +49,72 @@ fn setup_player(
         })
         .with(Animations {
             animations: vec![
-                // idle animation 
+                // idle animation
                 Animation {
                     frames: vec![
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 0, duration: 3.0 - 1.0 / 6.0 },
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 3, duration: 1.0 / 6.0 }
-                    ]
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 0,
+                            duration: 3.0 - 1.0 / 6.0,
+                        },
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 3,
+                            duration: 1.0 / 6.0,
+                        },
+                    ],
                 },
                 // walk animation
-                Animation { 
+                Animation {
                     frames: vec![
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 1, duration: 1.0 / 15.0 },
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 2, duration: 1.0 / 15.0 }
-                    ]
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 1,
+                            duration: 1.0 / 15.0,
+                        },
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 2,
+                            duration: 1.0 / 15.0,
+                        },
+                    ],
                 },
                 // rolling animation
                 Animation {
                     frames: vec![
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 4, duration: 1.0 / 15.0 },
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 5, duration: 1.0 / 15.0 },
-                        AnimationFrame { atlas_handle: texture_atlas_handle.clone(), atlas_index: 6, duration: 1.0 / 15.0 },
-                        AnimationFrame { atlas_handle: texture_atlas_handle, atlas_index: 7, duration: 1.0 / 15.0 }
-                    ]
-                }
-            ]
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 4,
+                            duration: 1.0 / 15.0,
+                        },
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 5,
+                            duration: 1.0 / 15.0,
+                        },
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle.clone(),
+                            atlas_index: 6,
+                            duration: 1.0 / 15.0,
+                        },
+                        AnimationFrame {
+                            atlas_handle: texture_atlas_handle,
+                            atlas_index: 7,
+                            duration: 1.0 / 15.0,
+                        },
+                    ],
+                },
+            ],
         });
 }
 
 fn player_input(
     commands: &mut Commands,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(Entity, &CurrentPosition, &mut Animator), (With<Player>, Without<NextPosition>)>,
+    mut player_query: Query<
+        (Entity, &CurrentPosition, &mut Animator),
+        (With<Player>, Without<NextPosition>),
+    >,
 ) {
     for (player, current_position, mut animator) in player_query.iter_mut() {
         let next_position = if keyboard_input.pressed(KeyCode::Left) {
@@ -120,7 +149,7 @@ fn player_input(
         {
             return;
         }
-        
+
         animator.current_animation = 1;
         animator.current_frame = 0;
         commands.insert_one(player, NextPosition(next_position));
@@ -133,7 +162,10 @@ fn player_input(
 
 fn player_movement_done(
     commands: &mut Commands,
-    mut player_query: Query<(Entity, &NextPosition, &Transform, &Velocity, &mut Animator), With<Player>>,
+    mut player_query: Query<
+        (Entity, &NextPosition, &Transform, &Velocity, &mut Animator),
+        With<Player>,
+    >,
 ) {
     for (player, next_position, transform, v, mut animator) in player_query.iter_mut() {
         let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0)) - transform.translation;
@@ -161,7 +193,7 @@ fn player_collides_car(
         for (player, mut animator, current_position) in player_query.iter_mut() {
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             commands.insert_one(player, NextPosition(spawn_pos));
-            
+
             let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
             let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0));
             let direction = (next_translation - current_translation).normalize();

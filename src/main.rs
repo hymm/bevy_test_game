@@ -2,14 +2,15 @@
 
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 
+mod animation;
 mod car;
 mod collisions;
 mod consts;
 mod coordinates;
 mod loader;
 mod map;
+mod particles;
 mod player;
-mod animation;
 use crate::consts::{AppState, APP_STATE_STAGE, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
@@ -36,6 +37,7 @@ fn main() {
         .add_plugin(map::MapPlugin)
         .add_plugin(car::CarPlugin)
         .add_plugin(player::PlayerPlugin)
+        .add_plugin(particles::DustSystem)
         .run();
 }
 

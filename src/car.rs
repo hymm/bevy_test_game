@@ -26,7 +26,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
         .spawn(SpriteBundle {
             material: m.suv_material,
             transform: Transform {
-                scale: Vec3::new(if speed < 0.0 {-1.0} else {1.0}, 1.0, 1.0),
+                scale: Vec3::new(if speed < 0.0 { -1.0 } else { 1.0 }, 1.0, 1.0),
                 ..Default::default()
             },
             ..Default::default()
@@ -53,12 +53,13 @@ fn spawn_another_car(
     m: Res<Materials>,
 ) {
     for ev in event_reader.iter(&events) {
-        let spawn_x = if ev.2 < 0.0 {
-            16.0
-        } else {
-            -2.0
-        };
-        spawn_car(commands, m.clone(), TilePosition(Vec2::new(spawn_x, ev.1)), ev.2);
+        let spawn_x = if ev.2 < 0.0 { 16.0 } else { -2.0 };
+        spawn_car(
+            commands,
+            m.clone(),
+            TilePosition(Vec2::new(spawn_x, ev.1)),
+            ev.2,
+        );
     }
 }
 
@@ -95,17 +96,16 @@ fn going_offscreen(
     mut ev_going_offscreen: ResMut<Events<GoingOffscreenEvent>>,
 ) {
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
-        let left_offscreen =
-            (pos.0.x < 0.) && velocity.0.x < 0.0;
-        let right_offscreen = (pos.0.x + hitbox.size.x
-            > SCREEN_X_MAX as f32)
-            && velocity.0.x > 0.0;
-        let top_offscreen = (pos.0.y > SCREEN_Y_MAX as f32)
-            && velocity.0.y > 0.0;
-        let bottom_offscreen =
-            (pos.0.y + hitbox.size.y < 0.0) && velocity.0.y < 0.0;
+        let left_offscreen = (pos.0.x < 0.) && velocity.0.x < 0.0;
+        let right_offscreen = (pos.0.x + hitbox.size.x > SCREEN_X_MAX as f32) && velocity.0.x > 0.0;
+        let top_offscreen = (pos.0.y > SCREEN_Y_MAX as f32) && velocity.0.y > 0.0;
+        let bottom_offscreen = (pos.0.y + hitbox.size.y < 0.0) && velocity.0.y < 0.0;
         if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
-            ev_going_offscreen.send(GoingOffscreenEvent(entity, pos.0.y / TILE_SIZE as f32, velocity.0.x));
+            ev_going_offscreen.send(GoingOffscreenEvent(
+                entity,
+                pos.0.y / TILE_SIZE as f32,
+                velocity.0.x,
+            ));
             commands.insert_one(entity, GoingOffscreen);
         }
     }
