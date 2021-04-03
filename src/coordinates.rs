@@ -5,6 +5,7 @@ use bevy::transform::components::Transform;
 
 #[derive(Default, Copy, Clone, PartialEq)]
 pub struct Velocity(pub Vec2);
+pub struct Acceleration(pub Vec2);
 
 pub struct SpriteSize(pub Vec2);
 
@@ -36,6 +37,12 @@ impl PixelPosition {
     }
 }
 
+fn update_velocity(mut q: Query<(&Acceleration, &mut Velocity)>, time: Res<Time>) {
+    for (a, mut v) in q.iter_mut() {
+        v.0 += a.0 * time.delta_seconds();
+    }
+}
+
 fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time>) {
     for (v, mut p) in q.iter_mut() {
         p.0 += v.0 * time.delta_seconds();
@@ -59,7 +66,8 @@ fn update_translation_atlas_sprite(mut q: Query<(&PixelPosition, &SpriteSize, &m
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.on_state_update(APP_STATE_STAGE, AppState::InGame, update_position.system())
+        app.on_state_update(APP_STATE_STAGE, AppState::InGame, update_velocity.system())
+            .on_state_update(APP_STATE_STAGE, AppState::InGame, update_position.system())
             .on_state_update(
                 APP_STATE_STAGE,
                 AppState::InGame,
