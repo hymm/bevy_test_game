@@ -186,7 +186,7 @@ fn player_collides_car(
     commands: &mut Commands,
     events: Res<Events<CollisionEvent<Player, Car>>>,
     mut event_reader: Local<EventReader<CollisionEvent<Player, Car>>>,
-    mut player_query: Query<(Entity, &mut Animator, &CurrentPosition), With<Player>>,
+    mut player_query: Query<(Entity, &mut Animator, &PixelPosition), With<Player>>,
     map: Res<Map>,
 ) {
     if event_reader.iter(&events).next().is_some() {
@@ -194,7 +194,7 @@ fn player_collides_car(
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             commands.insert_one(player, NextPosition(spawn_pos));
 
-            let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
+            let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0));
             let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0));
             let direction = (next_translation - current_translation).normalize();
             commands.insert_one(player, Velocity(direction.truncate() * PLAYER_SPEED));
