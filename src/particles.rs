@@ -15,7 +15,7 @@ struct DustConfig {
 impl Default for DustConfig {
     fn default() -> Self {
         DustConfig {
-            x_velocity_range: 1.0..2.0,
+            x_velocity_range: -30.0..30.0,
             y_velocity_range: -3.0..1.0,
             lifetime: 8.0 / 60.0, // secs
             radius: 1.0,
@@ -28,14 +28,20 @@ struct Dust;
 struct DustColor {
     material: Handle<ColorMaterial>,
 }
-struct Lifetime {
-    current_lifetime: f32,
+impl FromResources for DustColor {
+    fn from_resources(res: &Resources) -> Self {
+        if let Some(mut materials) = res.get_mut::<Assets<ColorMaterial>>() {
+            DustColor {
+                material: materials.add(Color::rgb(0.7, 0.0, 0.0).into())
+            }
+        } else {
+            panic!("Could not get materials to initialize dust color");
+        }
+    }
 }
 
-fn setup(commands: &mut Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-    commands.insert_resource(DustColor {
-        material: materials.add(Color::rgb(0.7, 0.0, 0.0).into()),
-    });
+struct Lifetime {
+    current_lifetime: f32,
 }
 
 fn spawn_new_dust(
@@ -48,24 +54,24 @@ fn spawn_new_dust(
     for (pixel_pos, animator) in player_query.iter() {
         if animator.current_animation == 2 {
             commands
-            .spawn(SpriteBundle {
-                material: dust_color.material.clone(),
-                transform: Transform {
-                    scale: Vec3::one() * 10.0,
-                    translation: pixel_pos.get_translation(Vec2::new(2.0, 2.0)),
+                .spawn(SpriteBundle {
+                    sprite: Sprite::new(Vec2::new(1.0, 1.0)),
+                    material: dust_color.material.clone(),
+                    transform: Transform {
+                        translation: pixel_pos.get_translation(Vec2::new(1.0, 1.0)) + Vec3::new(4.0, 4.0, 0.0),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            })
-            .with(Dust)
-            .with(PixelPosition(pixel_pos.0))
-            .with(Lifetime {
-                current_lifetime: dust_config.lifetime,
-            })
-            .with(Velocity(Vec2::new(
-                rng.gen_range(dust_config.x_velocity_range.clone()),
-                rng.gen_range(dust_config.y_velocity_range.clone()),
-            )));
+                })
+                .with(Dust)
+                .with(PixelPosition(pixel_pos.0))
+                .with(Lifetime {
+                    current_lifetime: dust_config.lifetime,
+                })
+                .with(Velocity(Vec2::new(
+                    rng.gen_range(dust_config.x_velocity_range.clone()),
+                    rng.gen_range(dust_config.y_velocity_range.clone()),
+                )));
         }
     }
 }
@@ -95,7 +101,7 @@ pub struct DustSystem;
 impl Plugin for DustSystem {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<DustConfig>()
-            .on_state_enter(APP_STATE_STAGE, AppState::InGame, setup.system())
+            .init_resource::<DustColor>()
             .on_state_update(APP_STATE_STAGE, AppState::InGame, spawn_new_dust.system())
             .on_state_update(
                 APP_STATE_STAGE,
