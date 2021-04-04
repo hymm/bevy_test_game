@@ -182,6 +182,7 @@ fn player_movement_done(
     }
 }
 
+const PLAYER_ROLLING_SPEED: f32 = 90.0;
 fn player_collides_car(
     commands: &mut Commands,
     events: Res<Events<CollisionEvent<Player, Car>>>,
@@ -197,7 +198,7 @@ fn player_collides_car(
             let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0));
             let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0));
             let direction = (next_translation - current_translation).normalize();
-            commands.insert_one(player, Velocity(direction.truncate() * PLAYER_SPEED));
+            commands.insert_one(player, Velocity(direction.truncate() * PLAYER_ROLLING_SPEED));
             animator.current_animation = 2;
             animator.current_frame = 0;
         }
