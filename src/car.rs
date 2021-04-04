@@ -17,7 +17,7 @@ fn store_car_material(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let handle = asset_server.get_handle("suv.png");
+    let handle = asset_server.get_handle("sprites/suv.png");
     m.suv_material = materials.add(handle.into());
 }
 

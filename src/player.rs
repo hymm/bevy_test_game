@@ -22,7 +22,7 @@ fn setup_player(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     map: Res<Map>,
 ) {
-    let texture_handle = asset_server.load("shoe_animation.png");
+    let texture_handle = asset_server.load("sprites/shoe_animation.png");
     let sprite_size = SpriteSize(Vec2::new(8.0, 8.0));
     let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
@@ -198,7 +198,10 @@ fn player_collides_car(
             let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0));
             let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0));
             let direction = (next_translation - current_translation).normalize();
-            commands.insert_one(player, Velocity(direction.truncate() * PLAYER_ROLLING_SPEED));
+            commands.insert_one(
+                player,
+                Velocity(direction.truncate() * PLAYER_ROLLING_SPEED),
+            );
             animator.current_animation = 2;
             animator.current_frame = 0;
         }

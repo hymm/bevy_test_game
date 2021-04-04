@@ -2,7 +2,7 @@ use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
 use bevy::prelude::*;
 use bevy::sprite::Sprite;
 use bevy::transform::components::Transform;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Copy, Clone, PartialEq)]
 pub struct Velocity(pub Vec2);

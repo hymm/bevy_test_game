@@ -7,26 +7,46 @@ struct SpriteHandles {
     handles: Vec<HandleUntyped>,
 }
 
-fn setup(mut sprite_handles: ResMut<SpriteHandles>, asset_server: Res<AssetServer>) {
-    sprite_handles.handles = asset_server.load_folder(".").unwrap();
+#[derive(Default)]
+struct MapHandles {
+    handles: Vec<HandleUntyped>,
+}
+
+fn setup(
+    asset_server: Res<AssetServer>,
+    mut sprite_handles: ResMut<SpriteHandles>,
+    mut map_handles: ResMut<MapHandles>,
+) {
+    sprite_handles.handles = asset_server.load_folder("./sprites").unwrap();
+    map_handles.handles = asset_server.load_folder("./levels").unwrap();
 }
 
 fn track_assets_ready(
     mut state: ResMut<State<AppState>>,
     sprite_handles: ResMut<SpriteHandles>,
+    map_handles: ResMut<MapHandles>,
     asset_server: Res<AssetServer>,
 ) {
-    if let LoadState::Loaded =
-        asset_server.get_group_load_state(sprite_handles.handles.iter().map(|handle| handle.id))
+    if LoadState::Loaded
+        != asset_server.get_group_load_state(sprite_handles.handles.iter().map(|handle| handle.id))
     {
-        state.set_next(AppState::Loading).unwrap();
+        return;
     }
+
+    if LoadState::Loaded
+        != asset_server.get_group_load_state(map_handles.handles.iter().map(|handle| handle.id))
+    {
+        return;
+    }
+
+    state.set_next(AppState::Loading).unwrap();
 }
 
 pub struct AssetsLoadingPlugin;
 impl Plugin for AssetsLoadingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<SpriteHandles>()
+            .init_resource::<MapHandles>()
             .on_state_enter(APP_STATE_STAGE, AppState::AssetLoading, setup.system())
             .on_state_update(
                 APP_STATE_STAGE,
