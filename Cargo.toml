@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 bevy = "0.4"
 rand = "0.8.0"
+ron = "0.6.4"
+serde = { version = "1.0", features = ["derive"] }
+bevy_asset_ron = "0.1.0"

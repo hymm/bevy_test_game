@@ -288,6 +288,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_asset_ron"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7370a5f3830a8b598ae102fc2f811cec44541f29721e8423b338d00bb3fad572"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "ron",
+ "serde",
+]
+
+[[package]]
 name = "bevy_audio"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -634,7 +646,10 @@ name = "bevy_test_game"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_asset_ron",
  "rand 0.8.3",
+ "ron",
+ "serde",
 ]
 
 [[package]]
@@ -2904,11 +2919,11 @@ dependencies = [
 
 [[package]]
 name = "ron"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10b27f2d1934e1c43458a35bfaaf1aa7550dbb364a53b963c6894c9121bfd6d5"
+checksum = "064ea8613fb712a19faf920022ec8ddf134984f100090764a4e1d768f3827f1f"
 dependencies = [
- "base64 0.12.3",
+ "base64 0.13.0",
  "bitflags",
  "serde",
 ]

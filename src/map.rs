@@ -1,26 +1,34 @@
 use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
 use crate::coordinates::TilePosition;
+use std::{fs::File, io::Write};
+use ron::{ser::{to_writer_pretty, PrettyConfig}, de::from_reader};
 use bevy::prelude::*;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct MapRow {
     sprite: u32,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct House {
     pub tile_x: f32,
     pub tile_y: f32,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct BusStop {
     pub tile_x: f32,
     pub tile_y: f32,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct CarData {
     pub tile_position: TilePosition,
     pub speed: f32,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Map {
     pub rows: [MapRow; 16],
     pub house: House,
@@ -126,6 +134,12 @@ fn load_map_atlas(
     });
     state.set_next(AppState::InGame).unwrap();
 }
+
+// fn save_map_to_file(map: &Map, path: &str) {
+//     let file = File::create(format!("assets/levels/{}", path)).expect("Couldn't open file");
+//     let pretty = PrettyConfig::new();
+//     to_writer_pretty(file, &map, pretty).expect("Serialization failed");
+// }
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {

@@ -2,6 +2,7 @@ use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
 use bevy::prelude::*;
 use bevy::sprite::Sprite;
 use bevy::transform::components::Transform;
+use serde::{Serialize, Deserialize};
 
 #[derive(Default, Copy, Clone, PartialEq)]
 pub struct Velocity(pub Vec2);
@@ -9,7 +10,7 @@ pub struct Acceleration(pub Vec2);
 
 pub struct SpriteSize(pub Vec2);
 
-#[derive(Default, Copy, Clone, PartialEq)]
+#[derive(Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TilePosition(pub Vec2);
 impl TilePosition {
     pub fn get_translation(&self, size: Vec2) -> Vec3 {
