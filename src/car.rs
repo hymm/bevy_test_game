@@ -1,6 +1,6 @@
 use crate::collisions::Hitbox;
 use crate::consts::{AppState, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
-use crate::coordinates::{PixelPosition, TilePosition, Velocity};
+use crate::coordinates::{PixelPosition, TilePosition, Velocity, Layer};
 use crate::map::Map;
 use bevy::prelude::*;
 
@@ -28,11 +28,13 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
             material: m.suv_material,
             transform: Transform {
                 scale: Vec3::new(if speed < 0.0 { -1.0 } else { 1.0 }, 1.0, 1.0),
+                translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
                 ..Default::default()
             },
             ..Default::default()
         })
         .insert(Car)
+        .insert(Layer(1.0))
         .insert(PixelPosition(Vec2::new(
             tile_pos.0.x * TILE_SIZE as f32,
             tile_pos.0.y * TILE_SIZE as f32,

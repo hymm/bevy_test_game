@@ -1,6 +1,6 @@
 use crate::animation::Animator;
 use crate::consts::AppState;
-use crate::coordinates::{Acceleration, PixelPosition, Velocity};
+use crate::coordinates::{Acceleration, PixelPosition, Velocity, Layer};
 use crate::player::Player;
 use bevy::prelude::*;
 use rand::Rng;
@@ -56,6 +56,7 @@ fn spawn_new_dust(
         return;
     }
     let mut rng = rand::thread_rng();
+    let dust_layer = 3.0;
     for (player_pos, animator) in player_query.iter() {
         if animator.current_animation == 2 {
             let dust_pos = PixelPosition(player_pos.0 + Vec2::new(8.0, 4.0));
@@ -65,13 +66,14 @@ fn spawn_new_dust(
                     sprite: Sprite::new(Vec2::new(1.0, 1.0)),
                     material: dust_color.material.clone(),
                     transform: Transform {
-                        translation: dust_pos.get_translation(Vec2::new(1.0, 1.0)),
+                        translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), dust_layer),
                         ..Default::default()
                     },
                     ..Default::default()
                 })
                 .insert(Dust)
                 .insert(dust_pos)
+                .insert(Layer(dust_layer))
                 .insert(Lifetime {
                     current_lifetime: config.lifetime,
                 })

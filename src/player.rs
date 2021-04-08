@@ -2,7 +2,7 @@ use crate::animation::{Animation, AnimationFrame, Animations, Animator};
 use crate::car::Car;
 use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, TILE_HEIGHT, TILE_WIDTH};
-use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity};
+use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity, Layer};
 use crate::map::Map;
 use bevy::prelude::*;
 use std::time::Duration;
@@ -28,12 +28,13 @@ fn setup_player(
     let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
+    let player_layer = 1.0;
     commands
         .spawn()
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle.clone(),
             transform: Transform {
-                translation: player_pos.get_translation(Vec2::new(8.0, 8.0)),
+                translation: player_pos.get_translation(Vec2::new(8.0, 8.0), player_layer),
                 ..Default::default()
             },
             ..Default::default()
@@ -41,6 +42,7 @@ fn setup_player(
         .insert(Player)
         .insert(CurrentPosition(player_pos))
         .insert(PixelPosition(player_pos.get_pixel_position().0))
+        .insert(Layer(player_layer))
         .insert(sprite_size)
         .insert(Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)))
         .insert(Animator {
@@ -114,11 +116,11 @@ fn player_input(
     mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
     mut player_query: Query<
-        (Entity, &CurrentPosition, &mut Animator),
+        (Entity, &CurrentPosition, &mut Animator, &Layer),
         (With<Player>, Without<NextPosition>),
     >,
 ) {
-    for (player, current_position, mut animator) in player_query.iter_mut() {
+    for (player, current_position, mut animator, layer) in player_query.iter_mut() {
         let next_position = if keyboard_input.pressed(KeyCode::Left) {
             TilePosition(Vec2::new(
                 current_position.0 .0.x - 1.0,
@@ -155,8 +157,8 @@ fn player_input(
         animator.current_animation = 1;
         animator.current_frame = 0;
         commands.entity(player).insert(NextPosition(next_position));
-        let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0));
-        let next_translation = next_position.get_translation(Vec2::new(8.0, 8.0));
+        let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0), layer.0);
+        let next_translation = next_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
         let direction = (next_translation - current_translation).normalize();
         commands
             .entity(player)
@@ -167,12 +169,12 @@ fn player_input(
 fn player_movement_done(
     mut commands: Commands,
     mut player_query: Query<
-        (Entity, &NextPosition, &Transform, &Velocity, &mut Animator),
+        (Entity, &NextPosition, &Transform, &Velocity, &mut Animator, &Layer),
         With<Player>,
     >,
 ) {
-    for (player, next_position, transform, v, mut animator) in player_query.iter_mut() {
-        let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0)) - transform.translation;
+    for (player, next_position, transform, v, mut animator, layer) in player_query.iter_mut() {
+        let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0), layer.0) - transform.translation;
         if diff.truncate().dot(v.0) <= 0.0 {
             let new_current_position = CurrentPosition(next_position.0);
             let new_pixel_position = new_current_position.0.get_pixel_position();
@@ -192,16 +194,16 @@ const PLAYER_ROLLING_SPEED: f32 = 90.0;
 fn player_collides_car(
     mut commands: Commands,
     mut event_reader: EventReader<CollisionEvent<Player, Car>>,
-    mut player_query: Query<(Entity, &mut Animator, &PixelPosition), With<Player>>,
+    mut player_query: Query<(Entity, &mut Animator, &PixelPosition, &Layer), With<Player>>,
     map: Res<Map>,
 ) {
     if event_reader.iter().next().is_some() {
-        for (player, mut animator, current_position) in player_query.iter_mut() {
+        for (player, mut animator, current_position, layer) in player_query.iter_mut() {
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             commands.entity(player).insert(NextPosition(spawn_pos));
 
-            let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0));
-            let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0));
+            let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
+            let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0), layer.0);
             let direction = (next_translation - current_translation).normalize();
             commands
                 .entity(player)

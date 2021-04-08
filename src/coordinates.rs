@@ -9,12 +9,13 @@ pub struct Velocity(pub Vec2);
 pub struct Acceleration(pub Vec2);
 
 pub struct SpriteSize(pub Vec2);
+pub struct Layer(pub f32);
 
 #[derive(Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TilePosition(pub Vec2);
 impl TilePosition {
-    pub fn get_translation(&self, size: Vec2) -> Vec3 {
-        (self.0 * TILE_SIZE as f32 + size / 2.).extend(0.0)
+    pub fn get_translation(&self, size: Vec2, z: f32) -> Vec3 {
+        (self.0 * TILE_SIZE as f32 + size / 2.).extend(z)
     }
 
     pub fn get_pixel_position(&self) -> PixelPosition {
@@ -31,10 +32,10 @@ impl PixelPosition {
     // }
 
     // only allow integer positions of pixels
-    pub fn get_translation(&self, size: Vec2) -> Vec3 {
+    pub fn get_translation(&self, size: Vec2, z: f32) -> Vec3 {
         // round positions to keep pixels on grid
         // TODO: round is probably incorrect if sprite has odd (1, 3, 5, ...) dimensions
-        (self.0 + size / 2.).round().extend(0.0)
+        (self.0 + size / 2.).round().extend(z)
     }
 }
 
@@ -52,28 +53,22 @@ fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time
 
 // TODO: add Changed<PixelPosition> here after upgrading to 5.0
 // TODO: figure out how to unify update_translation and update_translation_atlas_sprite
-fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform)>) {
-    for (pos, sprite, mut transform) in q.iter_mut() {
-        transform.translation = pos.get_translation(sprite.size);
+fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform, &Layer)>) {
+    for (pos, sprite, mut transform, layer) in q.iter_mut() {
+        transform.translation = pos.get_translation(sprite.size, layer.0);
     }
 }
 
-fn update_translation_atlas_sprite(mut q: Query<(&PixelPosition, &SpriteSize, &mut Transform)>) {
-    for (pos, size, mut transform) in q.iter_mut() {
-        transform.translation = pos.get_translation(size.0);
+fn update_translation_atlas_sprite(mut q: Query<(&PixelPosition, &SpriteSize, &mut Transform, &Layer)>) {
+    for (pos, size, mut transform, layer) in q.iter_mut() {
+        transform.translation = pos.get_translation(size.0, layer.0);
     }
 }
 
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_set(
-            SystemSet::on_update(AppState::InGame)
-                .with_system(update_velocity.system())
-                .with_system(update_position.system())
-                .with_system(update_translation.system())
-                .with_system(update_translation_atlas_sprite.system()),
-        );
+        app.add_system_set(SystemSet::on_update(AppState::InGame).with_system(update_velocity.system()).with_system(update_position.system()).with_system(update_translation.system()).with_system(update_translation_atlas_sprite.system()));
     }
 }
 
@@ -91,7 +86,7 @@ mod tests {
         };
 
         let tile_pos = TilePosition(Vec2::new(22., 33.));
-        let t = tile_pos.get_translation(s.size);
+        let t = tile_pos.get_translation(s.size, 0.0);
 
         assert_eq!(
             t,
@@ -121,7 +116,7 @@ mod tests {
 
         let p = PixelPosition(Vec2::new(10.0, 5.0));
 
-        let t = p.get_translation(s.size);
+        let t = p.get_translation(s.size, 0.0);
         assert_eq!(t, Vec3::new(12.0, 6.0, 0.0));
     }
 }

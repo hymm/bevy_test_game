@@ -1,5 +1,5 @@
 use crate::consts::{AppState, TILE_SIZE};
-use crate::coordinates::TilePosition;
+use crate::coordinates::{TilePosition, Layer};
 use bevy::{prelude::*, reflect::TypeUuid};
 use ron::{
     de::from_reader,
@@ -99,6 +99,7 @@ fn load_map_atlas(
         3,
     );
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let tile_layer = 0.0;
 
     for r in 0..map.rows.len() {
         for c in 0..16 {
@@ -108,12 +109,12 @@ fn load_map_atlas(
                 transform: Transform {
                     // order rows from top down
                     translation: TilePosition(Vec2::new(c as f32, (15 - r) as f32))
-                        .get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
+                        .get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32), tile_layer),
                     ..Default::default()
                 },
                 sprite: spr,
                 ..Default::default()
-            });
+            }).insert(Layer(tile_layer));
         }
     }
 
@@ -122,22 +123,22 @@ fn load_map_atlas(
         material: materials.add(house_handle.into()),
         transform: Transform {
             translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
-                .get_translation(Vec2::new(16., 16.)),
+                .get_translation(Vec2::new(16., 16.), 1.0),
             ..Default::default()
         },
         ..Default::default()
-    });
+    }).insert(Layer(1.0));
 
     let bus_stop_handle = asset_server.get_handle("sprites/bus_stop.png");
     commands.spawn().insert_bundle(SpriteBundle {
         material: materials.add(bus_stop_handle.into()),
         transform: Transform {
             translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
-                .get_translation(Vec2::new(16., 16.)),
+                .get_translation(Vec2::new(16., 16.), 1.0),
             ..Default::default()
         },
         ..Default::default()
-    });
+    }).insert(Layer(1.0));
     state.set(AppState::InGame).unwrap();
 }
 
