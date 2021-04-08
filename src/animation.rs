@@ -4,11 +4,12 @@ use bevy::asset::Handle;
 use bevy::core::{Time, Timer};
 use bevy::ecs::prelude::{Query, Res};
 use bevy::sprite::{TextureAtlas, TextureAtlasSprite};
+use std::time::Duration;
 
 pub struct AnimationFrame {
     pub atlas_handle: Handle<TextureAtlas>,
     pub atlas_index: u32,
-    pub duration: f32,
+    pub duration: Duration,
 }
 
 pub struct Animation {
@@ -36,7 +37,7 @@ pub fn sprite_animation_system(
     )>,
 ) {
     for (animations, mut animator, mut atlas, mut sprite) in &mut query.iter_mut() {
-        animator.timer.tick(time.delta_seconds());
+        animator.timer.tick(time.delta());
 
         if !animator.timer.finished() && animator.last_animation == animator.current_animation {
             break;

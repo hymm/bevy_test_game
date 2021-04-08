@@ -1,5 +1,5 @@
 use crate::animation::Animator;
-use crate::consts::{AppState, APP_STATE_STAGE};
+use crate::consts::AppState;
 use crate::coordinates::{Acceleration, PixelPosition, Velocity};
 use crate::player::Player;
 use bevy::prelude::*;
@@ -28,9 +28,9 @@ struct DustSpawnTimer(Timer);
 struct DustColor {
     material: Handle<ColorMaterial>,
 }
-impl FromResources for DustColor {
-    fn from_resources(res: &Resources) -> Self {
-        if let Some(mut materials) = res.get_mut::<Assets<ColorMaterial>>() {
+impl FromWorld for DustColor {
+    fn from_world(world: &mut World) -> Self {
+        if let Some(mut materials) = world.get_resource_mut::<Assets<ColorMaterial>>() {
             DustColor {
                 material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
             }
@@ -45,14 +45,14 @@ struct Lifetime {
 }
 
 fn spawn_new_dust(
-    commands: &mut Commands,
+    mut commands: Commands,
     player_query: Query<(&PixelPosition, &Animator), With<Player>>,
     dust_color: Res<DustColor>,
     config: Res<DustConfig>,
     mut timer: ResMut<DustSpawnTimer>,
     time: Res<Time>,
 ) {
-    if !timer.0.tick(time.delta_seconds()).finished() {
+    if !timer.0.tick(time.delta()).finished() {
         return;
     }
     let mut rng = rand::thread_rng();
@@ -60,7 +60,8 @@ fn spawn_new_dust(
         if animator.current_animation == 2 {
             let dust_pos = PixelPosition(player_pos.0 + Vec2::new(8.0, 4.0));
             commands
-                .spawn(SpriteBundle {
+                .spawn()
+                .insert_bundle(SpriteBundle {
                     sprite: Sprite::new(Vec2::new(1.0, 1.0)),
                     material: dust_color.material.clone(),
                     transform: Transform {
@@ -69,29 +70,29 @@ fn spawn_new_dust(
                     },
                     ..Default::default()
                 })
-                .with(Dust)
-                .with(dust_pos)
-                .with(Lifetime {
+                .insert(Dust)
+                .insert(dust_pos)
+                .insert(Lifetime {
                     current_lifetime: config.lifetime,
                 })
-                .with(Velocity(Vec2::new(
+                .insert(Velocity(Vec2::new(
                     rng.gen_range(config.x_velocity_range.clone()),
                     rng.gen_range(config.y_velocity_range.clone()),
                 )))
-                .with(Acceleration(Vec2::new(0.0, config.gravity)));
+                .insert(Acceleration(Vec2::new(0.0, config.gravity)));
         }
     }
 }
 
 fn update_dust_lifetime(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut query: Query<(Entity, &mut Lifetime)>,
     time: Res<Time>,
 ) {
     for (entity, mut lifetime) in query.iter_mut() {
         lifetime.current_lifetime -= time.delta_seconds();
         if lifetime.current_lifetime < 0.0 {
-            commands.despawn(entity);
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -101,15 +102,14 @@ impl Plugin for DustSystem {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<DustConfig>()
             .init_resource::<DustColor>()
-            .add_resource(DustSpawnTimer(Timer::new(
+            .insert_resource(DustSpawnTimer(Timer::new(
                 Duration::from_millis((0.75 / 60.0 * 1000.0) as u64),
                 true,
             )))
-            .on_state_update(APP_STATE_STAGE, AppState::InGame, spawn_new_dust.system())
-            .on_state_update(
-                APP_STATE_STAGE,
-                AppState::InGame,
-                update_dust_lifetime.system(),
+            .add_system_set(
+                SystemSet::on_update(AppState::InGame)
+                    .with_system(spawn_new_dust.system())
+                    .with_system(update_dust_lifetime.system()),
             );
     }
 }

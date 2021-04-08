@@ -1,13 +1,12 @@
-use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
+use crate::consts::{AppState, TILE_SIZE};
 use crate::coordinates::TilePosition;
 use bevy::{prelude::*, reflect::TypeUuid};
-use bevy_asset_ron::RonAssetPlugin;
 use ron::{
     de::from_reader,
-    ser::{to_writer_pretty, PrettyConfig},
+    // ser::{to_writer_pretty, PrettyConfig},
 };
 use serde::{Deserialize, Serialize};
-use std::{fs::File, io::Write};
+use std::{fs::File, /* io::Write */};
 
 #[derive(Serialize, Deserialize)]
 pub struct MapRow {
@@ -40,8 +39,8 @@ pub struct Map {
     pub bus_stop: BusStop,
     pub cars: Vec<CarData>,
 }
-impl FromResources for Map {
-    fn from_resources(_: &Resources) -> Self {
+impl FromWorld for Map {
+    fn from_world(_: &mut World) -> Self {
         Map {
             rows: [
                 MapRow { sprite: 0 },
@@ -83,18 +82,14 @@ impl FromResources for Map {
     }
 }
 
-pub struct CurrentMap(Handle<Map>);
-
 fn load_map_atlas(
-    commands: &mut Commands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<AppState>>,
-    maps: Res<Assets<Map>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let map_handle: Handle<Map> = asset_server.load("levels/level_1.map");
-    let map = maps.get(&map_handle).unwrap();
+    let map = load_map("level_1.map");
 
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
@@ -108,7 +103,7 @@ fn load_map_atlas(
     for r in 0..map.rows.len() {
         for c in 0..16 {
             let spr = TextureAtlasSprite::new(map.rows[r].sprite);
-            commands.spawn(SpriteSheetBundle {
+            commands.spawn().insert_bundle(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform {
                     // order rows from top down
@@ -123,7 +118,7 @@ fn load_map_atlas(
     }
 
     let house_handle = asset_server.get_handle("sprites/house.png");
-    commands.spawn(SpriteBundle {
+    commands.spawn().insert_bundle(SpriteBundle {
         material: materials.add(house_handle.into()),
         transform: Transform {
             translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
@@ -134,7 +129,7 @@ fn load_map_atlas(
     });
 
     let bus_stop_handle = asset_server.get_handle("sprites/bus_stop.png");
-    commands.spawn(SpriteBundle {
+    commands.spawn().insert_bundle(SpriteBundle {
         material: materials.add(bus_stop_handle.into()),
         transform: Transform {
             translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
@@ -143,7 +138,7 @@ fn load_map_atlas(
         },
         ..Default::default()
     });
-    state.set_next(AppState::InGame).unwrap();
+    state.set(AppState::InGame).unwrap();
 }
 
 // fn save_map_to_file(map: &Map, path: &str) {
@@ -152,11 +147,17 @@ fn load_map_atlas(
 //     to_writer_pretty(file, &map, pretty).expect("Serialization failed");
 // }
 
+pub fn load_map(path: &str) -> Map {
+    let file = File::open(format!("assets/levels/{}", path)).expect("Couldn't open map file");
+    from_reader(file).expect("Could not parse ron map file")
+}
+
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<Map>()
-            .add_plugin(RonAssetPlugin::<Map>::new(&["map"]))
-            .on_state_enter(APP_STATE_STAGE, AppState::Loading, load_map_atlas.system());
+            .add_system_set(SystemSet::on_enter(AppState::Loading)
+                .with_system(load_map_atlas.system()),
+            );
     }
 }

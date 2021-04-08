@@ -1,5 +1,5 @@
 use crate::car::Car;
-use crate::consts::{AppState, APP_STATE_STAGE};
+use crate::consts::AppState;
 use crate::player::Player;
 use bevy::{
     prelude::*,
@@ -69,7 +69,7 @@ impl<S, T> CollisionEvent<S, T> {
 fn collision_system(
     hurtboxes: Query<(&Hurtbox, &Transform, Option<&Player>)>,
     hitboxes: Query<(&Hitbox, &Transform, Entity, Option<&Car>)>,
-    mut ev_player_hitby_car: ResMut<Events<CollisionEvent<Player, Car>>>,
+    mut ev_player_hitby_car: EventWriter<CollisionEvent<Player, Car>>,
 ) {
     for (hurtbox, hurt_transform, player) in hurtboxes.iter() {
         let hurt_top_left = hurt_transform.translation + hurtbox.offset.extend(0.0);
@@ -95,6 +95,8 @@ pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<CollisionEvent<Player, Car>>()
-            .on_state_update(APP_STATE_STAGE, AppState::InGame, collision_system.system());
+            .add_system_set(
+                SystemSet::on_update(AppState::InGame).with_system(collision_system.system()),
+            );
     }
 }

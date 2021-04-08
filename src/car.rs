@@ -1,5 +1,5 @@
 use crate::collisions::Hitbox;
-use crate::consts::{AppState, APP_STATE_STAGE, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
+use crate::consts::{AppState, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
 use crate::coordinates::{PixelPosition, TilePosition, Velocity};
 use crate::map::Map;
 use bevy::prelude::*;
@@ -23,7 +23,8 @@ fn store_car_material(
 
 fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, speed: f32) {
     commands
-        .spawn(SpriteBundle {
+        .spawn()
+        .insert_bundle(SpriteBundle {
             material: m.suv_material,
             transform: Transform {
                 scale: Vec3::new(if speed < 0.0 { -1.0 } else { 1.0 }, 1.0, 1.0),
@@ -31,31 +32,30 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
             },
             ..Default::default()
         })
-        .with(Car)
-        .with(PixelPosition(Vec2::new(
+        .insert(Car)
+        .insert(PixelPosition(Vec2::new(
             tile_pos.0.x * TILE_SIZE as f32,
             tile_pos.0.y * TILE_SIZE as f32,
         )))
-        .with(Velocity(Vec2::new(speed, 0.0))) // pixels per second
-        .with(Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)));
+        .insert(Velocity(Vec2::new(speed, 0.0))) // pixels per second
+        .insert(Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)));
 }
 
-fn spawn_initial_cars(commands: &mut Commands, m: Res<Materials>, map: Res<Map>) {
+fn spawn_initial_cars(mut commands: Commands, m: Res<Materials>, map: Res<Map>) {
     for car_data in map.cars.iter() {
-        spawn_car(commands, m.clone(), car_data.tile_position, car_data.speed);
+        spawn_car(&mut commands, m.clone(), car_data.tile_position, car_data.speed);
     }
 }
 
 fn spawn_another_car(
-    commands: &mut Commands,
-    events: Res<Events<GoingOffscreenEvent>>,
-    mut event_reader: Local<EventReader<GoingOffscreenEvent>>,
+    mut commands: Commands,
+    mut event_reader: EventReader<GoingOffscreenEvent>,
     m: Res<Materials>,
 ) {
-    for ev in event_reader.iter(&events) {
+    for ev in event_reader.iter() {
         let spawn_x = if ev.2 < 0.0 { 16.0 } else { -2.0 };
         spawn_car(
-            commands,
+            &mut commands,
             m.clone(),
             TilePosition(Vec2::new(spawn_x, ev.1)),
             ev.2,
@@ -70,7 +70,7 @@ fn fully_offscreen(
         (Entity, &PixelPosition, &Hitbox),
         (With<GoingOffscreen>, Without<FullyOffscreen>, With<Car>),
     >,
-    commands: &mut Commands,
+    mut commands: Commands,
 ) {
     for (entity, pos, hitbox) in q.iter_mut() {
         let left = pos.0.x;
@@ -82,7 +82,7 @@ fn fully_offscreen(
             || (top as i32) < 0
             || (bottom as i32) > SCREEN_Y_MAX
         {
-            commands.insert_one(entity, FullyOffscreen);
+            commands.entity(entity).insert(FullyOffscreen);
         }
     }
 }
@@ -92,8 +92,8 @@ fn going_offscreen(
         (Entity, &PixelPosition, &Hitbox, &Velocity),
         (Without<FullyOffscreen>, Without<GoingOffscreen>, With<Car>),
     >,
-    commands: &mut Commands,
-    mut ev_going_offscreen: ResMut<Events<GoingOffscreenEvent>>,
+    mut commands: Commands,
+    mut ev_going_offscreen: EventWriter<GoingOffscreenEvent>,
 ) {
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
         let left_offscreen = (pos.0.x < 0.) && velocity.0.x < 0.0;
@@ -106,17 +106,17 @@ fn going_offscreen(
                 pos.0.y / TILE_SIZE as f32,
                 velocity.0.x,
             ));
-            commands.insert_one(entity, GoingOffscreen);
+            commands.entity(entity).insert(GoingOffscreen);
         }
     }
 }
 
 fn despawn_out_of_bounds(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut q: Query<Entity, (With<GoingOffscreen>, With<FullyOffscreen>)>,
 ) {
     for entity in q.iter_mut() {
-        commands.despawn(entity);
+        commands.entity(entity).despawn();
     }
 }
 
@@ -125,27 +125,17 @@ impl Plugin for CarPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<Materials>()
             .add_event::<GoingOffscreenEvent>()
-            .on_state_enter(
-                APP_STATE_STAGE,
-                AppState::Loading,
-                store_car_material.system(),
+            .add_system_set(
+                SystemSet::on_enter(AppState::Loading)
+                    .with_system(store_car_material.system())
+                    .with_system(spawn_initial_cars.system()),
             )
-            .on_state_enter(
-                APP_STATE_STAGE,
-                AppState::Loading,
-                spawn_initial_cars.system(),
-            )
-            .on_state_update(
-                APP_STATE_STAGE,
-                AppState::InGame,
-                spawn_another_car.system(),
-            )
-            .on_state_update(APP_STATE_STAGE, AppState::InGame, fully_offscreen.system())
-            .on_state_update(
-                APP_STATE_STAGE,
-                AppState::InGame,
-                despawn_out_of_bounds.system(),
-            )
-            .on_state_update(APP_STATE_STAGE, AppState::InGame, going_offscreen.system());
+            .add_system_set(
+                SystemSet::on_update(AppState::InGame)
+                    .with_system(spawn_another_car.system())
+                    .with_system(fully_offscreen.system())
+                    .with_system(despawn_out_of_bounds.system())
+                    .with_system(going_offscreen.system()),
+            );
     }
 }

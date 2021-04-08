@@ -1,4 +1,4 @@
-use crate::consts::{AppState, APP_STATE_STAGE, TILE_SIZE};
+use crate::consts::{AppState, TILE_SIZE};
 use bevy::prelude::*;
 use bevy::sprite::Sprite;
 use bevy::transform::components::Transform;
@@ -67,18 +67,13 @@ fn update_translation_atlas_sprite(mut q: Query<(&PixelPosition, &SpriteSize, &m
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.on_state_update(APP_STATE_STAGE, AppState::InGame, update_velocity.system())
-            .on_state_update(APP_STATE_STAGE, AppState::InGame, update_position.system())
-            .on_state_update(
-                APP_STATE_STAGE,
-                AppState::InGame,
-                update_translation.system(),
-            )
-            .on_state_update(
-                APP_STATE_STAGE,
-                AppState::InGame,
-                update_translation_atlas_sprite.system(),
-            );
+        app.add_system_set(
+            SystemSet::on_update(AppState::InGame)
+                .with_system(update_velocity.system())
+                .with_system(update_position.system())
+                .with_system(update_translation.system())
+                .with_system(update_translation_atlas_sprite.system()),
+        );
     }
 }
 
@@ -92,6 +87,7 @@ mod tests {
         let s = Sprite {
             size: Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
             resize_mode: SpriteResizeMode::default(),
+            ..Default::default()
         };
 
         let tile_pos = TilePosition(Vec2::new(22., 33.));
@@ -120,6 +116,7 @@ mod tests {
         let s = Sprite {
             size: Vec2::new(3., 2.),
             resize_mode: SpriteResizeMode::default(),
+            ..Default::default()
         };
 
         let p = PixelPosition(Vec2::new(10.0, 5.0));

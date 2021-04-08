@@ -1,5 +1,3 @@
-pub const APP_STATE_STAGE: &str = "app_state_stage";
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     Setup,

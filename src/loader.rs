@@ -1,4 +1,4 @@
-use crate::consts::{AppState, APP_STATE_STAGE};
+use crate::consts::AppState;
 use bevy::asset::LoadState;
 use bevy::prelude::*;
 
@@ -39,7 +39,7 @@ fn track_assets_ready(
         return;
     }
 
-    state.set_next(AppState::Loading).unwrap();
+    state.set(AppState::Loading).unwrap();
 }
 
 pub struct AssetsLoadingPlugin;
@@ -47,11 +47,10 @@ impl Plugin for AssetsLoadingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<SpriteHandles>()
             .init_resource::<MapHandles>()
-            .on_state_enter(APP_STATE_STAGE, AppState::AssetLoading, setup.system())
-            .on_state_update(
-                APP_STATE_STAGE,
-                AppState::AssetLoading,
-                track_assets_ready.system(),
+            .add_system_set(SystemSet::on_enter(AppState::AssetLoading).with_system(setup.system()))
+            .add_system_set(
+                SystemSet::on_update(AppState::AssetLoading)
+                    .with_system(track_assets_ready.system()),
             );
     }
 }
