@@ -1,10 +1,10 @@
 #![allow(clippy::type_complexity)]
 
 use bevy::{
-    ecs::{
-        archetype::Archetypes, component::Components, entity::Entities,
-        schedule::ReportExecutionOrderAmbiguities,
-    },
+    // ecs::{
+    //     archetype::Archetypes, component::Components, entity::Entities,
+    //     schedule::ReportExecutionOrderAmbiguities,
+    // },
     input::system::exit_on_esc_system,
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
@@ -30,7 +30,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .insert_resource(ReportExecutionOrderAmbiguities)
+        // .insert_resource(ReportExecutionOrderAmbiguities)
         .add_system(exit_on_esc_system.system())
         // .add_system(debug.system())
         .add_state(AppState::Setup)
