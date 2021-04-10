@@ -1,3 +1,5 @@
+use bevy::prelude::SystemLabel;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     Setup,
@@ -5,6 +7,12 @@ pub enum AppState {
     Loading,
     InGame,
     Finished,
+}
+
+#[derive(Debug, Hash, Clone, Eq, PartialEq, SystemLabel)]
+pub enum SystemLabels {
+    PlayerMovement,
+    CarMovement,
 }
 
 pub const TILE_WIDTH: f32 = 16.0;

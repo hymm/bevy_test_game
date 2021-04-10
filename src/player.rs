@@ -1,8 +1,8 @@
 use crate::animation::{Animation, AnimationFrame, Animations, Animator};
 use crate::car::Car;
 use crate::collisions::{CollisionEvent, Hurtbox};
-use crate::consts::{AppState, TILE_HEIGHT, TILE_WIDTH};
-use crate::coordinates::{PixelPosition, SpriteSize, TilePosition, Velocity, Layer};
+use crate::consts::{AppState, SystemLabels, TILE_HEIGHT, TILE_WIDTH};
+use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocity};
 use crate::map::Map;
 use bevy::prelude::*;
 use std::time::Duration;
@@ -28,7 +28,7 @@ fn setup_player(
     let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
-    let player_layer = 1.0;
+    let player_layer = 2.0;
     commands
         .spawn()
         .insert_bundle(SpriteSheetBundle {
@@ -157,7 +157,9 @@ fn player_input(
         animator.current_animation = 1;
         animator.current_frame = 0;
         commands.entity(player).insert(NextPosition(next_position));
-        let current_translation = current_position.0.get_translation(Vec2::new(8.0, 8.0), layer.0);
+        let current_translation = current_position
+            .0
+            .get_translation(Vec2::new(8.0, 8.0), layer.0);
         let next_translation = next_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
         let direction = (next_translation - current_translation).normalize();
         commands
@@ -169,12 +171,22 @@ fn player_input(
 fn player_movement_done(
     mut commands: Commands,
     mut player_query: Query<
-        (Entity, &NextPosition, &Transform, &Velocity, &mut Animator, &Layer),
+        (
+            Entity,
+            &NextPosition,
+            &Transform,
+            &Velocity,
+            &mut Animator,
+            &Layer,
+        ),
         With<Player>,
     >,
 ) {
     for (player, next_position, transform, v, mut animator, layer) in player_query.iter_mut() {
-        let diff = next_position.0.get_translation(Vec2::new(8.0, 8.0), layer.0) - transform.translation;
+        let diff = next_position
+            .0
+            .get_translation(Vec2::new(8.0, 8.0), layer.0)
+            - transform.translation;
         if diff.truncate().dot(v.0) <= 0.0 {
             let new_current_position = CurrentPosition(next_position.0);
             let new_pixel_position = new_current_position.0.get_pixel_position();
@@ -202,7 +214,8 @@ fn player_collides_car(
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             commands.entity(player).insert(NextPosition(spawn_pos));
 
-            let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
+            let current_translation =
+                current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
             let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0), layer.0);
             let direction = (next_translation - current_translation).normalize();
             commands
@@ -222,9 +235,18 @@ impl Plugin for PlayerPlugin {
         )
         .add_system_set(
             SystemSet::on_update(AppState::InGame)
-                .with_system(player_input.system())
-                .with_system(player_movement_done.system())
-                .with_system(player_collides_car.system()),
+                .with_system(player_input.system().before(SystemLabels::PlayerMovement))
+                .with_system(
+                    player_movement_done
+                        .system()
+                        .label(SystemLabels::PlayerMovement),
+                )
+                .with_system(
+                    player_collides_car
+                        .system()
+                        .after(SystemLabels::PlayerMovement)
+                        .before("update_position"),
+                ),
         );
     }
 }

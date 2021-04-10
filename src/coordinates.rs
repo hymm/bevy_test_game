@@ -59,7 +59,9 @@ fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform, &La
     }
 }
 
-fn update_translation_atlas_sprite(mut q: Query<(&PixelPosition, &SpriteSize, &mut Transform, &Layer)>) {
+fn update_translation_atlas_sprite(
+    mut q: Query<(&PixelPosition, &SpriteSize, &mut Transform, &Layer)>,
+) {
     for (pos, size, mut transform, layer) in q.iter_mut() {
         transform.translation = pos.get_translation(size.0, layer.0);
     }
@@ -68,7 +70,17 @@ fn update_translation_atlas_sprite(mut q: Query<(&PixelPosition, &SpriteSize, &m
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_set(SystemSet::on_update(AppState::InGame).with_system(update_velocity.system()).with_system(update_position.system()).with_system(update_translation.system()).with_system(update_translation_atlas_sprite.system()));
+        app.add_system_set(
+            SystemSet::on_update(AppState::InGame)
+                .with_system(update_velocity.system().before("update_position"))
+                .with_system(update_position.system().label("update_position"))
+                .with_system(update_translation.system().after("update_position"))
+                .with_system(
+                    update_translation_atlas_sprite
+                        .system()
+                        .after("update_position"),
+                ),
+        );
     }
 }
 

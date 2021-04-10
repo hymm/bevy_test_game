@@ -1,6 +1,10 @@
 #![allow(clippy::type_complexity)]
 
 use bevy::{
+    ecs::{
+        archetype::Archetypes, component::Components, entity::Entities,
+        schedule::ReportExecutionOrderAmbiguities,
+    },
     input::system::exit_on_esc_system,
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
@@ -26,7 +30,9 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .insert_resource(ReportExecutionOrderAmbiguities)
         .add_system(exit_on_esc_system.system())
+        // .add_system(debug.system())
         .add_state(AppState::Setup)
         .add_system(animation::sprite_animation_system.system())
         .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup.system()))
@@ -50,3 +56,7 @@ fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
 
     state.set(AppState::AssetLoading).unwrap();
 }
+
+// fn debug(entities: &Entities, c: &Components, a: &Archetypes) {
+//     info!("entities {}, components: {}, archetypes {}", entities.len(), c.len(), a.len());
+// }

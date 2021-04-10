@@ -1,12 +1,9 @@
 use crate::consts::{AppState, TILE_SIZE};
-use crate::coordinates::{TilePosition, Layer};
+use crate::coordinates::{Layer, TilePosition};
 use bevy::{prelude::*, reflect::TypeUuid};
-use ron::{
-    de::from_reader,
-    // ser::{to_writer_pretty, PrettyConfig},
-};
+use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
-use std::{fs::File, /* io::Write */};
+use std::fs::File;
 
 #[derive(Serialize, Deserialize)]
 pub struct MapRow {
@@ -104,41 +101,53 @@ fn load_map_atlas(
     for r in 0..map.rows.len() {
         for c in 0..16 {
             let spr = TextureAtlasSprite::new(map.rows[r].sprite);
-            commands.spawn().insert_bundle(SpriteSheetBundle {
-                texture_atlas: texture_atlas_handle.clone(),
-                transform: Transform {
-                    // order rows from top down
-                    translation: TilePosition(Vec2::new(c as f32, (15 - r) as f32))
-                        .get_translation(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32), tile_layer),
+            commands
+                .spawn()
+                .insert_bundle(SpriteSheetBundle {
+                    texture_atlas: texture_atlas_handle.clone(),
+                    transform: Transform {
+                        // order rows from top down
+                        translation: TilePosition(Vec2::new(c as f32, (15 - r) as f32))
+                            .get_translation(
+                                Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
+                                tile_layer,
+                            ),
+                        ..Default::default()
+                    },
+                    sprite: spr,
                     ..Default::default()
-                },
-                sprite: spr,
-                ..Default::default()
-            }).insert(Layer(tile_layer));
+                })
+                .insert(Layer(tile_layer));
         }
     }
 
     let house_handle = asset_server.get_handle("sprites/house.png");
-    commands.spawn().insert_bundle(SpriteBundle {
-        material: materials.add(house_handle.into()),
-        transform: Transform {
-            translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
-                .get_translation(Vec2::new(16., 16.), 1.0),
+    commands
+        .spawn()
+        .insert_bundle(SpriteBundle {
+            material: materials.add(house_handle.into()),
+            transform: Transform {
+                translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
+                    .get_translation(Vec2::new(16., 16.), 1.0),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    }).insert(Layer(1.0));
+        })
+        .insert(Layer(1.0));
 
     let bus_stop_handle = asset_server.get_handle("sprites/bus_stop.png");
-    commands.spawn().insert_bundle(SpriteBundle {
-        material: materials.add(bus_stop_handle.into()),
-        transform: Transform {
-            translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
-                .get_translation(Vec2::new(16., 16.), 1.0),
+    commands
+        .spawn()
+        .insert_bundle(SpriteBundle {
+            material: materials.add(bus_stop_handle.into()),
+            transform: Transform {
+                translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
+                    .get_translation(Vec2::new(16., 16.), 1.0),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    }).insert(Layer(1.0));
+        })
+        .insert(Layer(1.0));
     state.set(AppState::InGame).unwrap();
 }
 
@@ -156,9 +165,8 @@ pub fn load_map(path: &str) -> Map {
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Map>()
-            .add_system_set(SystemSet::on_enter(AppState::Loading)
-                .with_system(load_map_atlas.system()),
-            );
+        app.init_resource::<Map>().add_system_set(
+            SystemSet::on_enter(AppState::Loading).with_system(load_map_atlas.system()),
+        );
     }
 }

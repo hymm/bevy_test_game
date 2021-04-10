@@ -1,6 +1,6 @@
 use crate::animation::Animator;
 use crate::consts::AppState;
-use crate::coordinates::{Acceleration, PixelPosition, Velocity, Layer};
+use crate::coordinates::{Acceleration, Layer, PixelPosition, Velocity};
 use crate::player::Player;
 use bevy::prelude::*;
 use rand::Rng;

@@ -1,6 +1,6 @@
 use crate::collisions::Hitbox;
 use crate::consts::{AppState, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
-use crate::coordinates::{PixelPosition, TilePosition, Velocity, Layer};
+use crate::coordinates::{Layer, PixelPosition, TilePosition, Velocity};
 use crate::map::Map;
 use bevy::prelude::*;
 
@@ -31,6 +31,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
                 translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
                 ..Default::default()
             },
+            sprite: Sprite::new(Vec2::new(14.0, 8.0)),
             ..Default::default()
         })
         .insert(Car)
@@ -45,7 +46,12 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
 
 fn spawn_initial_cars(mut commands: Commands, m: Res<Materials>, map: Res<Map>) {
     for car_data in map.cars.iter() {
-        spawn_car(&mut commands, m.clone(), car_data.tile_position, car_data.speed);
+        spawn_car(
+            &mut commands,
+            m.clone(),
+            car_data.tile_position,
+            car_data.speed,
+        );
     }
 }
 
@@ -129,14 +135,19 @@ impl Plugin for CarPlugin {
             .add_event::<GoingOffscreenEvent>()
             .add_system_set(
                 SystemSet::on_enter(AppState::Loading)
-                    .with_system(store_car_material.system())
-                    .with_system(spawn_initial_cars.system()),
+                    .with_system(store_car_material.system().before("spawn_initial_cars"))
+                    .with_system(spawn_initial_cars.system().label("spawn_initial_cars")),
             )
             .add_system_set(
                 SystemSet::on_update(AppState::InGame)
-                    .with_system(spawn_another_car.system())
-                    .with_system(fully_offscreen.system())
-                    .with_system(despawn_out_of_bounds.system())
+                    .with_system(spawn_another_car.system().label("spawn_another_car"))
+                    .with_system(
+                        fully_offscreen
+                            .system()
+                            .label("fully_offscreen")
+                            .before("spawn_another_car"),
+                    )
+                    .with_system(despawn_out_of_bounds.system().after("fully_offscreen"))
                     .with_system(going_offscreen.system()),
             );
     }
