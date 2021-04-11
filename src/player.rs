@@ -202,6 +202,20 @@ fn player_movement_done(
     }
 }
 
+fn player_step_sfx(
+    player_query: Query<&Animator, With<Player>>,
+    mut last_frame: Local<usize>,
+    asset_server: Res<AssetServer>,
+    audio: Res<Audio>,
+) {
+    let animator = player_query.single().unwrap();
+        if animator.current_animation == 1 && *last_frame != animator.current_frame {
+            let sfx = asset_server.load("sfx/step.mp3");
+            audio.play(sfx);
+        }
+        *last_frame = animator.current_frame;
+}
+
 const PLAYER_ROLLING_SPEED: f32 = 90.0;
 fn player_collides_car(
     mut commands: Commands,
@@ -243,6 +257,7 @@ impl Plugin for PlayerPlugin {
         .add_system_set(
             SystemSet::on_update(AppState::InGame)
                 .with_system(player_input.system().before(SystemLabels::PlayerMovement))
+                .with_system(player_step_sfx.system().after(SystemLabels::PlayerMovement))
                 .with_system(
                     player_movement_done
                         .system()
