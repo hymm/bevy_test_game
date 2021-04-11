@@ -208,9 +208,14 @@ fn player_collides_car(
     mut event_reader: EventReader<CollisionEvent<Player, Car>>,
     mut player_query: Query<(Entity, &mut Animator, &PixelPosition, &Layer), With<Player>>,
     map: Res<Map>,
+    asset_server: Res<AssetServer>,
+    audio: Res<Audio>,
 ) {
     if event_reader.iter().next().is_some() {
         for (player, mut animator, current_position, layer) in player_query.iter_mut() {
+            if animator.current_animation == 2 {
+                continue;
+            }
             let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
             commands.entity(player).insert(NextPosition(spawn_pos));
 
@@ -223,6 +228,8 @@ fn player_collides_car(
                 .insert(Velocity(direction.truncate() * PLAYER_ROLLING_SPEED));
             animator.current_animation = 2;
             animator.current_frame = 0;
+            let sfx = asset_server.load("sfx/honk.mp3");
+            audio.play(sfx);
         }
     }
 }
