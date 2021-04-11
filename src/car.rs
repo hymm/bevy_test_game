@@ -33,12 +33,13 @@ struct CarBundle {
 }
 
 fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, speed: f32) {
+    let travelling_left = speed < 0.0;
     commands.spawn_bundle(
         CarBundle {
             sprite_bundle: SpriteBundle {
                 material: m.suv_material,
                 transform: Transform {
-                    scale: Vec3::new(if speed < 0.0 { -1.0 } else { 1.0 }, 1.0, 1.0),
+                    scale: Vec3::new(if travelling_left { -1.0 } else { 1.0 }, 1.0, 1.0),
                     translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
                     ..Default::default()
                 },
@@ -48,7 +49,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
             car: Car,
             layer: Layer(1.0),
             pixel_position: PixelPosition(Vec2::new(
-                tile_pos.0.x * TILE_SIZE as f32,
+                tile_pos.0.x * TILE_SIZE as f32 + if travelling_left { 0.0} else {2.0},
                 tile_pos.0.y * TILE_SIZE as f32,
             )),
             velocity: Velocity(Vec2::new(speed, 0.0)),
