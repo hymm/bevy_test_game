@@ -17,6 +17,20 @@ pub struct Player;
 struct CurrentPosition(TilePosition);
 struct NextPosition(TilePosition);
 
+#[derive(Bundle)]
+struct PlayerBundle {
+    #[bundle]
+    sprite_bundle: SpriteSheetBundle,
+    player: Player,
+    current_position: CurrentPosition,
+    pixel_position: PixelPosition,
+    layer: Layer,
+    sprite_size: SpriteSize,
+    hurtbox: Hurtbox,
+    animator: Animator,
+    animations: Animations,
+}
+
 fn setup_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -29,29 +43,23 @@ fn setup_player(
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
     let player_layer = 2.0;
-    commands
-        .spawn()
-        .insert_bundle(SpriteSheetBundle {
+    commands.spawn_bundle(PlayerBundle {
+        sprite_bundle: SpriteSheetBundle {
             texture_atlas: texture_atlas_handle.clone(),
             transform: Transform {
                 translation: player_pos.get_translation(Vec2::new(8.0, 8.0), player_layer),
                 ..Default::default()
             },
             ..Default::default()
-        })
-        .insert(Player)
-        .insert(CurrentPosition(player_pos))
-        .insert(PixelPosition(player_pos.get_pixel_position().0))
-        .insert(Layer(player_layer))
-        .insert(sprite_size)
-        .insert(Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)))
-        .insert(Animator {
-            current_animation: 0,
-            last_animation: 0,
-            current_frame: 0,
-            timer: Timer::new(Default::default(), false),
-        })
-        .insert(Animations {
+        },
+        player: Player,
+        current_position: CurrentPosition(player_pos),
+        pixel_position: PixelPosition(player_pos.get_pixel_position().0),
+        layer: Layer(player_layer),
+        sprite_size,
+        hurtbox: Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)),
+        animator: Animator::default(),
+        animations: Animations {
             animations: vec![
                 // idle animation
                 Animation {
@@ -109,7 +117,8 @@ fn setup_player(
                     ],
                 },
             ],
-        });
+        }
+    });
 }
 
 fn player_input(

@@ -20,6 +20,7 @@ pub struct Animations {
     pub animations: Vec<Animation>,
 }
 
+#[derive(Default)]
 pub struct Animator {
     pub current_animation: usize,
     pub last_animation: usize,

@@ -21,27 +21,40 @@ fn store_car_material(
     m.suv_material = materials.add(handle.into());
 }
 
+#[derive(Bundle)]
+struct CarBundle {
+    #[bundle]
+    sprite_bundle: SpriteBundle,
+    car: Car,
+    layer: Layer,
+    pixel_position: PixelPosition,
+    velocity: Velocity,
+    hitbox: Hitbox,
+}
+
 fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, speed: f32) {
-    commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
-            material: m.suv_material,
-            transform: Transform {
-                scale: Vec3::new(if speed < 0.0 { -1.0 } else { 1.0 }, 1.0, 1.0),
-                translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
+    commands.spawn_bundle(
+        CarBundle {
+            sprite_bundle: SpriteBundle {
+                material: m.suv_material,
+                transform: Transform {
+                    scale: Vec3::new(if speed < 0.0 { -1.0 } else { 1.0 }, 1.0, 1.0),
+                    translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
+                    ..Default::default()
+                },
+                sprite: Sprite::new(Vec2::new(14.0, 8.0)),
                 ..Default::default()
             },
-            sprite: Sprite::new(Vec2::new(14.0, 8.0)),
-            ..Default::default()
-        })
-        .insert(Car)
-        .insert(Layer(1.0))
-        .insert(PixelPosition(Vec2::new(
-            tile_pos.0.x * TILE_SIZE as f32,
-            tile_pos.0.y * TILE_SIZE as f32,
-        )))
-        .insert(Velocity(Vec2::new(speed, 0.0))) // pixels per second
-        .insert(Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)));
+            car: Car,
+            layer: Layer(1.0),
+            pixel_position: PixelPosition(Vec2::new(
+                tile_pos.0.x * TILE_SIZE as f32,
+                tile_pos.0.y * TILE_SIZE as f32,
+            )),
+            velocity: Velocity(Vec2::new(speed, 0.0)),
+            hitbox: Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)),
+        }
+    );
 }
 
 fn spawn_initial_cars(mut commands: Commands, m: Res<Materials>, map: Res<Map>) {
