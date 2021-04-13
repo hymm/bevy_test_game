@@ -5,6 +5,21 @@ use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 
+
+pub struct Levels {
+    levels: Vec<String>,
+}
+impl FromWorld for Levels {
+    fn from_world(_: &mut World) -> Self {
+        Levels {
+            levels: vec![
+                "2_slow_cars.map".to_string(),
+                "level_2.map".to_string(),
+            ]
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct MapRow {
     sprite: u32,
@@ -85,8 +100,9 @@ fn load_map_atlas(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<AppState>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    levels: Res<Levels>,
 ) {
-    let map = load_map("level_1.map");
+    let map = load_map(&levels.levels[0]);
 
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
@@ -165,7 +181,7 @@ pub fn load_map(path: &str) -> Map {
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Map>().add_system_set(
+        app.init_resource::<Levels>().init_resource::<Map>().add_system_set(
             SystemSet::on_enter(AppState::Loading).with_system(load_map_atlas.system()),
         );
     }
