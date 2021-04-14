@@ -242,7 +242,10 @@ fn player_collides_car(
             if animator.current_animation == 2 {
                 return;
             }
-            let spawn_pos = TilePosition(Vec2::new(level.0.house.tile_x + 1.0, level.0.house.tile_y - 1.0));
+            let spawn_pos = TilePosition(Vec2::new(
+                level.0.house.tile_x + 1.0,
+                level.0.house.tile_y - 1.0,
+            ));
             commands.entity(player).insert(NextPosition(spawn_pos));
 
             let current_translation =
@@ -260,9 +263,17 @@ fn player_collides_car(
     }
 }
 
-// fn level_complete() {
-//     if current_position.y ==
-// }
+fn level_complete(
+    mut state: ResMut<State<AppState>>,
+    player_query: Query<&CurrentPosition, With<Player>>,
+    level: Res<CurrentLevel>,
+) {
+    if let Ok(current_position) = player_query.single() {
+        if (current_position.0 .0.y - level.0.bus_stop.tile_y - 1.0).abs() < 0.1 {
+            state.set(AppState::LevelDone).unwrap();
+        }
+    }
+}
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
@@ -280,6 +291,7 @@ impl Plugin for PlayerPlugin {
                         .system()
                         .label(SystemLabels::PlayerMovement),
                 )
+                .with_system(level_complete.system().after(SystemLabels::PlayerMovement))
                 .with_system(
                     player_collides_car
                         .system()

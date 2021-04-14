@@ -46,7 +46,23 @@
             speed: 30,
         ),
         (
-            tile_position: ((16, 7)),
+            tile_position: ((4, 8)),
+            speed: 30,
+        ),
+        (
+            tile_position: ((10, 8)),
+            speed: 30,
+        ),
+        (
+            tile_position: ((12, 7)),
+            speed: -30,
+        ),
+        (
+            tile_position: ((6, 7)),
+            speed: -30,
+        ),
+        (
+            tile_position: ((0, 7)),
             speed: -30,
         ),
     ],

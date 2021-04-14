@@ -52,7 +52,7 @@ pub struct Map {
 
 pub struct CurrentLevel(pub Map);
 impl Default for CurrentLevel {
-    fn default() -> Self{
+    fn default() -> Self {
         CurrentLevel(Map {
             rows: [
                 MapRow { sprite: 0 },
@@ -80,8 +80,7 @@ impl Default for CurrentLevel {
                 tile_x: 7.0,
                 tile_y: 5.0,
             },
-            cars: vec![
-            ],
+            cars: vec![],
         })
     }
 }
@@ -166,10 +165,20 @@ fn load_map_atlas(
 fn unload_level(
     mut commands: Commands,
     sprite_query: Query<Entity, Or<(With<Sprite>, With<TextureAtlasSprite>)>>,
+    mut levels: ResMut<Levels>,
+    mut state: ResMut<State<AppState>>,
 ) {
     for entity in sprite_query.iter() {
         commands.entity(entity).despawn();
     }
+    
+    if levels.current_level < levels.levels.len() - 1{
+        levels.current_level += 1;
+        state.set(AppState::Loading).unwrap();
+    } else {
+        state.set(AppState::Finished).unwrap();
+    }
+    
 }
 
 // fn save_map_to_file(map: &Map, path: &str) {

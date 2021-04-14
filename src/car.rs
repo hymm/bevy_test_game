@@ -56,11 +56,7 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
     });
 }
 
-fn spawn_initial_cars(
-    mut commands: Commands,
-    m: Res<Materials>,
-    current_level: Res<CurrentLevel>,
-) {
+fn spawn_initial_cars(mut commands: Commands, m: Res<Materials>, current_level: Res<CurrentLevel>) {
     for car_data in current_level.0.cars.iter() {
         spawn_car(
             &mut commands,
