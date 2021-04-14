@@ -3,7 +3,7 @@ use crate::car::Car;
 use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, SystemLabels, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocity};
-use crate::map::Map;
+use crate::map::{load_map, CurrentLevel};
 use bevy::prelude::*;
 use std::time::Duration;
 
@@ -35,13 +35,16 @@ fn setup_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    map: Res<Map>,
+    current_level: Res<CurrentLevel>,
 ) {
     let texture_handle = asset_server.load("sprites/shoe_animation.png");
     let sprite_size = SpriteSize(Vec2::new(8.0, 8.0));
     let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
-    let player_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
+    let player_pos = TilePosition(Vec2::new(
+        current_level.0.house.tile_x + 1.0,
+        current_level.0.house.tile_y - 1.0,
+    ));
     let player_layer = 2.0;
     commands.spawn_bundle(PlayerBundle {
         sprite_bundle: SpriteSheetBundle {
@@ -117,7 +120,7 @@ fn setup_player(
                     ],
                 },
             ],
-        }
+        },
     });
 }
 
@@ -218,11 +221,11 @@ fn player_step_sfx(
     audio: Res<Audio>,
 ) {
     let animator = player_query.single().unwrap();
-        if animator.current_animation == 1 && *last_frame != animator.current_frame {
-            let sfx = asset_server.load("sfx/step.mp3");
-            audio.play(sfx);
-        }
-        *last_frame = animator.current_frame;
+    if animator.current_animation == 1 && *last_frame != animator.current_frame {
+        let sfx = asset_server.load("sfx/step.mp3");
+        audio.play(sfx);
+    }
+    *last_frame = animator.current_frame;
 }
 
 const PLAYER_ROLLING_SPEED: f32 = 90.0;
@@ -230,16 +233,16 @@ fn player_collides_car(
     mut commands: Commands,
     mut event_reader: EventReader<CollisionEvent<Player, Car>>,
     mut player_query: Query<(Entity, &mut Animator, &PixelPosition, &Layer), With<Player>>,
-    map: Res<Map>,
     asset_server: Res<AssetServer>,
     audio: Res<Audio>,
+    level: Res<CurrentLevel>,
 ) {
     if event_reader.iter().next().is_some() {
-        for (player, mut animator, current_position, layer) in player_query.iter_mut() {
+        if let Ok((player, mut animator, current_position, layer)) = player_query.single_mut() {
             if animator.current_animation == 2 {
-                continue;
+                return;
             }
-            let spawn_pos = TilePosition(Vec2::new(map.house.tile_x + 1.0, map.house.tile_y - 1.0));
+            let spawn_pos = TilePosition(Vec2::new(level.0.house.tile_x + 1.0, level.0.house.tile_y - 1.0));
             commands.entity(player).insert(NextPosition(spawn_pos));
 
             let current_translation =
@@ -257,11 +260,16 @@ fn player_collides_car(
     }
 }
 
+// fn level_complete() {
+//     if current_position.y ==
+// }
+
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
-            SystemSet::on_enter(AppState::Loading).with_system(setup_player.system()),
+            SystemSet::on_enter(AppState::Loading)
+                .with_system(setup_player.system().after("load_current_map")),
         )
         .add_system_set(
             SystemSet::on_update(AppState::InGame)

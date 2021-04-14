@@ -35,8 +35,14 @@ fn track_assets_ready(
     sfx_handles: Res<SfxHandles>,
     asset_server: Res<AssetServer>,
 ) {
-    let handles: Vec<HandleUntyped> = sprite_handles.handles.iter().cloned().chain(map_handles.handles.iter().cloned()).chain(sfx_handles.handles.iter().cloned()).collect();
-    
+    let handles: Vec<HandleUntyped> = sprite_handles
+        .handles
+        .iter()
+        .cloned()
+        .chain(map_handles.handles.iter().cloned())
+        .chain(sfx_handles.handles.iter().cloned())
+        .collect();
+
     if LoadState::Loaded
         != asset_server.get_group_load_state(handles.iter().map(|handle| handle.id))
     {

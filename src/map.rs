@@ -5,17 +5,15 @@ use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 
-
 pub struct Levels {
-    levels: Vec<String>,
+    pub current_level: usize,
+    pub levels: Vec<String>,
 }
 impl FromWorld for Levels {
     fn from_world(_: &mut World) -> Self {
         Levels {
-            levels: vec![
-                "2_slow_cars.map".to_string(),
-                "level_2.map".to_string(),
-            ]
+            current_level: 0,
+            levels: vec!["2_slow_cars.map".to_string(), "level_2.map".to_string()],
         }
     }
 }
@@ -51,26 +49,28 @@ pub struct Map {
     pub bus_stop: BusStop,
     pub cars: Vec<CarData>,
 }
-impl FromWorld for Map {
-    fn from_world(_: &mut World) -> Self {
-        Map {
+
+pub struct CurrentLevel(pub Map);
+impl Default for CurrentLevel {
+    fn default() -> Self{
+        CurrentLevel(Map {
             rows: [
                 MapRow { sprite: 0 },
-                MapRow { sprite: 1 },
                 MapRow { sprite: 0 },
-                MapRow { sprite: 1 },
                 MapRow { sprite: 0 },
-                MapRow { sprite: 1 },
                 MapRow { sprite: 0 },
-                MapRow { sprite: 3 },
-                MapRow { sprite: 11 },
-                MapRow { sprite: 1 },
                 MapRow { sprite: 0 },
-                MapRow { sprite: 1 },
                 MapRow { sprite: 0 },
-                MapRow { sprite: 1 },
                 MapRow { sprite: 0 },
-                MapRow { sprite: 1 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
+                MapRow { sprite: 0 },
             ],
             house: House {
                 tile_x: 7.0,
@@ -81,17 +81,13 @@ impl FromWorld for Map {
                 tile_y: 5.0,
             },
             cars: vec![
-                CarData {
-                    tile_position: TilePosition(Vec2::new(-2.0, 8.0)),
-                    speed: 30.0,
-                },
-                CarData {
-                    tile_position: TilePosition(Vec2::new(16.0, 7.0)),
-                    speed: -30.0,
-                },
             ],
-        }
+        })
     }
+}
+
+fn load_current_map(levels: Res<Levels>, mut current_level: ResMut<CurrentLevel>) {
+    current_level.0 = load_map(&levels.levels[levels.current_level]);
 }
 
 fn load_map_atlas(
@@ -102,7 +98,7 @@ fn load_map_atlas(
     mut materials: ResMut<Assets<ColorMaterial>>,
     levels: Res<Levels>,
 ) {
-    let map = load_map(&levels.levels[0]);
+    let map = load_map(&levels.levels[levels.current_level]);
 
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
@@ -167,6 +163,15 @@ fn load_map_atlas(
     state.set(AppState::InGame).unwrap();
 }
 
+fn unload_level(
+    mut commands: Commands,
+    sprite_query: Query<Entity, Or<(With<Sprite>, With<TextureAtlasSprite>)>>,
+) {
+    for entity in sprite_query.iter() {
+        commands.entity(entity).despawn();
+    }
+}
+
 // fn save_map_to_file(map: &Map, path: &str) {
 //     let file = File::create(format!("assets/levels/{}", path)).expect("Couldn't open file");
 //     let pretty = PrettyConfig::new();
@@ -181,8 +186,15 @@ pub fn load_map(path: &str) -> Map {
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Levels>().init_resource::<Map>().add_system_set(
-            SystemSet::on_enter(AppState::Loading).with_system(load_map_atlas.system()),
-        );
+        app.init_resource::<Levels>()
+            .insert_resource(CurrentLevel::default())
+            .add_system_set(
+                SystemSet::on_enter(AppState::Loading)
+                    .with_system(load_current_map.system().label("load_current_map"))
+                    .with_system(load_map_atlas.system().after("load_current_map")),
+            )
+            .add_system_set(
+                SystemSet::on_enter(AppState::LevelDone).with_system(unload_level.system()),
+            );
     }
 }

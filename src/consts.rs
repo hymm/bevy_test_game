@@ -6,6 +6,7 @@ pub enum AppState {
     AssetLoading,
     Loading,
     InGame,
+    LevelDone,
     Finished,
 }
 

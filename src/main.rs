@@ -13,7 +13,6 @@ use bevy::{
     input::system::exit_on_esc_system,
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
-    
 };
 
 mod animation;
@@ -45,7 +44,6 @@ fn main() {
         .add_plugin(loader::AssetsLoadingPlugin)
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         // .add_plugin(bevy::diagnostic::EntityCountDiagnosticsPlugin::default())
-        
         // Adds a system that prints diagnostics to the console
         // .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(coordinates::MovementPlugin)

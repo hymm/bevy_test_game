@@ -1,7 +1,7 @@
 use crate::collisions::Hitbox;
 use crate::consts::{AppState, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
 use crate::coordinates::{Layer, PixelPosition, TilePosition, Velocity};
-use crate::map::Map;
+use crate::map::CurrentLevel;
 use bevy::prelude::*;
 
 pub struct Car;
@@ -34,32 +34,34 @@ struct CarBundle {
 
 fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, speed: f32) {
     let travelling_left = speed < 0.0;
-    commands.spawn_bundle(
-        CarBundle {
-            sprite_bundle: SpriteBundle {
-                material: m.suv_material,
-                transform: Transform {
-                    scale: Vec3::new(if travelling_left { -1.0 } else { 1.0 }, 1.0, 1.0),
-                    translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
-                    ..Default::default()
-                },
-                sprite: Sprite::new(Vec2::new(14.0, 8.0)),
+    commands.spawn_bundle(CarBundle {
+        sprite_bundle: SpriteBundle {
+            material: m.suv_material,
+            transform: Transform {
+                scale: Vec3::new(if travelling_left { -1.0 } else { 1.0 }, 1.0, 1.0),
+                translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
                 ..Default::default()
             },
-            car: Car,
-            layer: Layer(1.0),
-            pixel_position: PixelPosition(Vec2::new(
-                tile_pos.0.x * TILE_SIZE as f32 + if travelling_left { 0.0} else {2.0},
-                tile_pos.0.y * TILE_SIZE as f32,
-            )),
-            velocity: Velocity(Vec2::new(speed, 0.0)),
-            hitbox: Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)),
-        }
-    );
+            sprite: Sprite::new(Vec2::new(14.0, 8.0)),
+            ..Default::default()
+        },
+        car: Car,
+        layer: Layer(1.0),
+        pixel_position: PixelPosition(Vec2::new(
+            tile_pos.0.x * TILE_SIZE as f32 + if travelling_left { 0.0 } else { 2.0 },
+            tile_pos.0.y * TILE_SIZE as f32,
+        )),
+        velocity: Velocity(Vec2::new(speed, 0.0)),
+        hitbox: Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(14.0, 8.0)),
+    });
 }
 
-fn spawn_initial_cars(mut commands: Commands, m: Res<Materials>, map: Res<Map>) {
-    for car_data in map.cars.iter() {
+fn spawn_initial_cars(
+    mut commands: Commands,
+    m: Res<Materials>,
+    current_level: Res<CurrentLevel>,
+) {
+    for car_data in current_level.0.cars.iter() {
         spawn_car(
             &mut commands,
             m.clone(),
@@ -150,7 +152,12 @@ impl Plugin for CarPlugin {
             .add_system_set(
                 SystemSet::on_enter(AppState::Loading)
                     .with_system(store_car_material.system().before("spawn_initial_cars"))
-                    .with_system(spawn_initial_cars.system().label("spawn_initial_cars")),
+                    .with_system(
+                        spawn_initial_cars
+                            .system()
+                            .label("spawn_initial_cars")
+                            .after("load_current_map"),
+                    ),
             )
             .add_system_set(
                 SystemSet::on_update(AppState::InGame)
