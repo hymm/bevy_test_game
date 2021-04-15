@@ -13,7 +13,11 @@ impl FromWorld for Levels {
     fn from_world(_: &mut World) -> Self {
         Levels {
             current_level: 0,
-            levels: vec!["2_slow_cars.map".to_string(), "level_2.map".to_string()],
+            levels: vec![
+                "2_slow_cars.map".to_string(),
+                "level_2.map".to_string(),
+                "level_3.map".to_string(),
+            ],
         }
     }
 }
@@ -171,14 +175,13 @@ fn unload_level(
     for entity in sprite_query.iter() {
         commands.entity(entity).despawn();
     }
-    
-    if levels.current_level < levels.levels.len() - 1{
+
+    if levels.current_level < levels.levels.len() - 1 {
         levels.current_level += 1;
         state.set(AppState::Loading).unwrap();
     } else {
         state.set(AppState::Finished).unwrap();
     }
-    
 }
 
 // fn save_map_to_file(map: &Map, path: &str) {

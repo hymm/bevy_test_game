@@ -42,20 +42,36 @@
     ),
     cars: [
         (
+            tile_position: ((12, 8)),
+            speed: 25,
+        ),
+        (
             tile_position: ((8, 8)),
-            speed: 40,
+            speed: 25,
+        ),
+        (
+            tile_position: ((4, 8)),
+            speed: 25,
         ),
         (
             tile_position: ((0, 8)),
-            speed: 40,
+            speed: 25,
+        ),
+        (
+            tile_position: ((12, 7)),
+            speed: -25,
         ),
         (
             tile_position: ((8, 7)),
-            speed: -40,
+            speed: -25,
+        ),
+        (
+            tile_position: ((4, 7)),
+            speed: -25,
         ),
         (
             tile_position: ((0, 7)),
-            speed: -40,
+            speed: -25,
         ),
     ],
 )
