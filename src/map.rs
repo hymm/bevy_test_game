@@ -13,11 +13,7 @@ impl FromWorld for Levels {
     fn from_world(_: &mut World) -> Self {
         Levels {
             current_level: 0,
-            levels: vec![
-                "2_slow_cars.map".to_string(),
-                "level_2.map".to_string(),
-                "level_3.map".to_string(),
-            ],
+            levels: vec!["2_slow_cars.map".to_string(), "level_2.map".to_string()],
         }
     }
 }

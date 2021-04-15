@@ -24,6 +24,7 @@ mod loader;
 mod map;
 mod particles;
 mod player;
+mod win_screen;
 use crate::consts::{AppState, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
@@ -52,6 +53,7 @@ fn main() {
         .add_plugin(car::CarPlugin)
         .add_plugin(player::PlayerPlugin)
         .add_plugin(particles::DustSystem)
+        .add_plugin(win_screen::WinScreenPlugin)
         .run();
 }
 
@@ -62,6 +64,7 @@ fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
     camera.orthographic_projection.scale = 1.0 / SCALE;
 
     commands.spawn().insert_bundle(camera);
+    commands.spawn().insert_bundle(UiCameraBundle::default());
 
     state.set(AppState::AssetLoading).unwrap();
 }
