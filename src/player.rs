@@ -295,8 +295,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(
                     player_collides_car
                         .system()
-                        .after(SystemLabels::PlayerMovement)
-                        .before("update_position"),
+                        .after(SystemLabels::PlayerMovement),
                 ),
         );
     }

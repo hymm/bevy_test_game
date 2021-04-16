@@ -1,5 +1,5 @@
 use crate::car::Car;
-use crate::consts::AppState;
+use crate::consts::{AppState, SystemLabels};
 use crate::player::Player;
 use bevy::{
     prelude::*,
@@ -96,7 +96,12 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<CollisionEvent<Player, Car>>()
             .add_system_set(
-                SystemSet::on_update(AppState::InGame).with_system(collision_system.system()),
+                SystemSet::on_update(AppState::InGame).with_system(
+                    collision_system
+                        .system()
+                        .after("update_translation")
+                        .before(SystemLabels::PlayerMovement),
+                ),
             );
     }
 }

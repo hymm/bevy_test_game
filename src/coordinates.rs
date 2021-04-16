@@ -74,10 +74,16 @@ impl Plugin for MovementPlugin {
             SystemSet::on_update(AppState::InGame)
                 .with_system(update_velocity.system().before("update_position"))
                 .with_system(update_position.system().label("update_position"))
-                .with_system(update_translation.system().after("update_position"))
+                .with_system(
+                    update_translation
+                        .system()
+                        .label("update_translation")
+                        .after("update_position"),
+                )
                 .with_system(
                     update_translation_atlas_sprite
                         .system()
+                        .label("update_translation")
                         .after("update_position"),
                 ),
         );
