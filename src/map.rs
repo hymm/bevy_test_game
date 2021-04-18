@@ -1,3 +1,4 @@
+use crate::collisions::Hitbox;
 use crate::consts::{AppState, TILE_SIZE};
 use crate::coordinates::{Layer, TilePosition};
 use bevy::{prelude::*, reflect::TypeUuid};
@@ -13,10 +14,15 @@ impl FromWorld for Levels {
     fn from_world(_: &mut World) -> Self {
         Levels {
             current_level: 0,
-            levels: vec!["2_slow_cars.map".to_string(), "level_2.map".to_string()],
+            levels: vec![
+                "4_cars_with_walls.map".to_string(),
+                "level_2.map".to_string(),
+            ],
         }
     }
 }
+
+pub struct Wall;
 
 #[derive(Serialize, Deserialize)]
 pub struct MapRow {
@@ -41,6 +47,12 @@ pub struct CarData {
     pub speed: f32,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MapWallRow {
+    row: i32,
+    columns: [bool; 16],
+}
+
 #[derive(Serialize, Deserialize, TypeUuid)]
 #[uuid = "c57b6443-0ba6-4beb-82a9-a4d0948f99f5"]
 pub struct Map {
@@ -48,6 +60,7 @@ pub struct Map {
     pub house: House,
     pub bus_stop: BusStop,
     pub cars: Vec<CarData>,
+    pub walls: Vec<MapWallRow>,
 }
 
 pub struct CurrentLevel(pub Map);
@@ -81,6 +94,7 @@ impl Default for CurrentLevel {
                 tile_y: 5.0,
             },
             cars: vec![],
+            walls: vec![],
         })
     }
 }
@@ -128,7 +142,39 @@ fn load_map_atlas(
                     sprite: spr,
                     ..Default::default()
                 })
-                .insert(Layer(tile_layer));
+                .insert(Layer(tile_layer))
+                .id();
+        }
+    }
+
+    for wall_row in map.walls.iter() {
+        let mut c = 0;
+        for wall_exists in wall_row.columns.iter() {
+            if *wall_exists {
+                commands
+                    .spawn()
+                    .insert_bundle(SpriteSheetBundle {
+                        texture_atlas: texture_atlas_handle.clone(),
+                        transform: Transform {
+                            // order rows from top down
+                            translation: TilePosition(Vec2::new(
+                                c as f32,
+                                (15 - wall_row.row) as f32,
+                            ))
+                            .get_translation(
+                                Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
+                                tile_layer,
+                            ),
+                            ..Default::default()
+                        },
+                        sprite: TextureAtlasSprite::new(2),
+                        ..Default::default()
+                    })
+                    .insert(Layer(tile_layer + 0.1))
+                    .insert(Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(8.0, 8.0)))
+                    .insert(Wall);
+            }
+            c += 1;
         }
     }
 

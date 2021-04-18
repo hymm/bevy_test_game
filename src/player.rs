@@ -3,7 +3,7 @@ use crate::car::Car;
 use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, SystemLabels, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocity};
-use crate::map::{load_map, CurrentLevel};
+use crate::map::{CurrentLevel, Wall};
 use bevy::prelude::*;
 use std::time::Duration;
 
@@ -232,13 +232,24 @@ const PLAYER_ROLLING_SPEED: f32 = 90.0;
 fn player_collides_car(
     mut commands: Commands,
     mut event_reader: EventReader<CollisionEvent<Player, Car>>,
-    mut player_query: Query<(Entity, &mut Animator, &PixelPosition, &Layer), With<Player>>,
+    mut player_query: Query<
+        (
+            Entity,
+            &mut Animator,
+            &PixelPosition,
+            &CurrentPosition,
+            &Layer,
+        ),
+        With<Player>,
+    >,
     asset_server: Res<AssetServer>,
     audio: Res<Audio>,
     level: Res<CurrentLevel>,
 ) {
     if event_reader.iter().next().is_some() {
-        if let Ok((player, mut animator, current_position, layer)) = player_query.single_mut() {
+        if let Ok((player, mut animator, current_position, tile_pos, layer)) =
+            player_query.single_mut()
+        {
             if animator.current_animation == 2 {
                 return;
             }
@@ -259,6 +270,27 @@ fn player_collides_car(
             animator.current_frame = 0;
             let sfx = asset_server.load("sfx/honk.mp3");
             audio.play(sfx);
+        }
+    }
+}
+
+fn player_collides_wall(
+    mut commands: Commands,
+    mut event_reader: EventReader<CollisionEvent<Player, Wall>>,
+    mut player_query: Query<(Entity, &mut Animator, &CurrentPosition), With<Player>>,
+) {
+    if event_reader.iter().next().is_some() {
+        if let Ok((player, mut animator, current_position)) = player_query.single_mut() {
+            if animator.current_animation == 2 {
+                return;
+            }
+            commands
+                .entity(player)
+                .remove::<NextPosition>()
+                .insert(current_position.0.get_pixel_position())
+                .remove::<Velocity>();
+            animator.current_animation = 0;
+            animator.current_frame = 0;
         }
     }
 }
@@ -294,6 +326,11 @@ impl Plugin for PlayerPlugin {
                 .with_system(level_complete.system().after(SystemLabels::PlayerMovement))
                 .with_system(
                     player_collides_car
+                        .system()
+                        .after(SystemLabels::PlayerMovement),
+                )
+                .with_system(
+                    player_collides_wall
                         .system()
                         .after(SystemLabels::PlayerMovement),
                 ),
