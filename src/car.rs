@@ -87,49 +87,55 @@ struct FullyOffscreen;
 struct GoingOffscreen;
 fn fully_offscreen(
     mut q: Query<
-        (Entity, &PixelPosition, &Hitbox),
-        (With<GoingOffscreen>, Without<FullyOffscreen>, With<Car>),
-    >,
-    mut commands: Commands,
-) {
-    for (entity, pos, hitbox) in q.iter_mut() {
-        let left = pos.0.x;
-        let right = pos.0.x + hitbox.size.x;
-        let top = pos.0.y;
-        let bottom = pos.0.y + hitbox.size.y;
-        if (right as i32) < 0
-            || (left as i32) > SCREEN_X_MAX
-            || (top as i32) < 0
-            || (bottom as i32) > SCREEN_Y_MAX
-        {
-            commands.entity(entity).insert(FullyOffscreen);
-        }
-    }
-}
-
-fn going_offscreen(
-    mut q: Query<
         (Entity, &PixelPosition, &Hitbox, &Velocity),
-        (Without<FullyOffscreen>, Without<GoingOffscreen>, With<Car>),
+        (Without<FullyOffscreen>, With<Car>),
     >,
     mut commands: Commands,
     mut ev_going_offscreen: EventWriter<GoingOffscreenEvent>,
 ) {
     for (entity, pos, hitbox, velocity) in q.iter_mut() {
-        let left_offscreen = (pos.0.x < 0.) && velocity.0.x < 0.0;
-        let right_offscreen = (pos.0.x + hitbox.size.x > SCREEN_X_MAX as f32) && velocity.0.x > 0.0;
-        let top_offscreen = (pos.0.y > SCREEN_Y_MAX as f32) && velocity.0.y > 0.0;
-        let bottom_offscreen = (pos.0.y + hitbox.size.y < 0.0) && velocity.0.y < 0.0;
-        if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
+        let left = pos.0.x;
+        let right = pos.0.x + hitbox.size.x;
+        let top = pos.0.y;
+        let bottom = pos.0.y + hitbox.size.y;
+        if (right < 0.0 && velocity.0.x < 0.0)
+            || (left > SCREEN_X_MAX as f32 && velocity.0.x > 0.0)
+            || (top < 0.0 && velocity.0.y < 0.0)
+            || (bottom > SCREEN_Y_MAX as f32 && velocity.0.y > 0.0)
+        {
+            commands.entity(entity).insert(FullyOffscreen);
             ev_going_offscreen.send(GoingOffscreenEvent(
                 entity,
                 pos.0.y / TILE_SIZE as f32,
                 velocity.0.x,
             ));
-            commands.entity(entity).insert(GoingOffscreen);
         }
     }
 }
+
+// fn going_offscreen(
+//     mut q: Query<
+//         (Entity, &PixelPosition, &Hitbox, &Velocity),
+//         (Without<FullyOffscreen>, Without<GoingOffscreen>, With<Car>),
+//     >,
+//     mut commands: Commands,
+//     mut ev_going_offscreen: EventWriter<GoingOffscreenEvent>,
+// ) {
+//     for (entity, pos, hitbox, velocity) in q.iter_mut() {
+//         let left_offscreen = (pos.0.x < 0.) && velocity.0.x < 0.0;
+//         let right_offscreen = (pos.0.x + hitbox.size.x > SCREEN_X_MAX as f32) && velocity.0.x > 0.0;
+//         let top_offscreen = (pos.0.y > SCREEN_Y_MAX as f32) && velocity.0.y > 0.0;
+//         let bottom_offscreen = (pos.0.y + hitbox.size.y < 0.0) && velocity.0.y < 0.0;
+//         if left_offscreen || right_offscreen || top_offscreen || bottom_offscreen {
+//             ev_going_offscreen.send(GoingOffscreenEvent(
+//                 entity,
+//                 pos.0.y / TILE_SIZE as f32,
+//                 velocity.0.x,
+//             ));
+//             commands.entity(entity).insert(GoingOffscreen);
+//         }
+//     }
+// }
 
 fn despawn_out_of_bounds(
     mut commands: Commands,
@@ -165,7 +171,6 @@ impl Plugin for CarPlugin {
                             .before("spawn_another_car"),
                     )
                     .with_system(despawn_out_of_bounds.system().after("fully_offscreen"))
-                    .with_system(going_offscreen.system()),
             );
     }
 }
