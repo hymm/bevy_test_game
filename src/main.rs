@@ -1,10 +1,12 @@
 #![allow(clippy::type_complexity)]
 
 use bevy::{
-    // ecs::{
-    //     archetype::Archetypes, component::Components, entity::Entities,
-    //     schedule::ReportExecutionOrderAmbiguities,
-    // },
+    ecs::{
+        archetype::Archetypes,
+        component::{ComponentId, Components},
+        entity::Entities,
+        schedule::ReportExecutionOrderAmbiguities,
+    },
     // diagnostic::{
     //     FrameTimeDiagnosticsPlugin,
     //     LogDiagnosticsPlugin,
@@ -12,6 +14,7 @@ use bevy::{
     // },
     input::system::exit_on_esc_system,
     prelude::*,
+    reflect::TypeRegistration,
     render::camera::{ScalingMode, WindowOrigin},
 };
 use bevy_mod_debugdump::schedule_graph_dot;
@@ -38,23 +41,24 @@ fn main() {
     })
     .add_plugins(DefaultPlugins)
     // .insert_resource(ReportExecutionOrderAmbiguities)
-    .add_system(exit_on_esc_system.system())
     // .add_system(debug.system())
-    .add_state(AppState::Setup)
-    .add_system(animation::sprite_animation_system.system())
-    .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup.system()))
-    .add_plugin(loader::AssetsLoadingPlugin)
     // .add_plugin(FrameTimeDiagnosticsPlugin::default())
     // .add_plugin(bevy::diagnostic::EntityCountDiagnosticsPlugin::default())
     // Adds a system that prints diagnostics to the console
     // .add_plugin(LogDiagnosticsPlugin::default())
-    .add_plugin(coordinates::MovementPlugin)
-    .add_plugin(collisions::CollisionPlugin)
-    .add_plugin(map::MapPlugin)
-    .add_plugin(car::CarPlugin)
-    .add_plugin(player::PlayerPlugin)
-    .add_plugin(particles::DustSystem)
-    .add_plugin(win_screen::WinScreenPlugin)
+    .add_startup_system(resources.system())
+    // .add_system(exit_on_esc_system.system())
+    // .add_state(AppState::Setup)
+    // .add_system(animation::sprite_animation_system.system())
+    // .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup.system()))
+    // .add_plugin(loader::AssetsLoadingPlugin)
+    // .add_plugin(coordinates::MovementPlugin)
+    // .add_plugin(collisions::CollisionPlugin)
+    // .add_plugin(map::MapPlugin)
+    // .add_plugin(car::CarPlugin)
+    // .add_plugin(player::PlayerPlugin)
+    // .add_plugin(particles::DustSystem)
+    // .add_plugin(win_screen::WinScreenPlugin)
     .run();
 
     println!("{}", schedule_graph_dot(&app.app.schedule));
@@ -75,3 +79,16 @@ fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
 // fn debug(entities: &Entities, c: &Components, a: &Archetypes) {
 //     info!("entities {}, components: {}, archetypes {}", entities.len(), c.len(), a.len());
 // }
+
+fn resources(archetypes: &Archetypes, components: &Components) {
+    let resources = archetypes.resource();
+
+    let mut r: Vec<String> = resources
+        .components()
+        .map(|id| components.get_info(id).unwrap())
+        .map(|info| TypeRegistration::get_short_name(info.name()))
+        .collect();
+
+    r.sort();
+    r.iter().for_each(|name| println!("{}", name));
+}
