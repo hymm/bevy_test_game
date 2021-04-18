@@ -133,29 +133,23 @@ fn player_input(
     >,
 ) {
     for (player, current_position, mut animator, layer) in player_query.iter_mut() {
-        let next_position = if keyboard_input.pressed(KeyCode::Left) {
-            TilePosition(Vec2::new(
-                current_position.0 .0.x - 1.0,
-                current_position.0 .0.y,
-            ))
-        } else if keyboard_input.pressed(KeyCode::Right) {
-            TilePosition(Vec2::new(
-                current_position.0 .0.x + 1.0,
-                current_position.0 .0.y,
-            ))
-        } else if keyboard_input.pressed(KeyCode::Up) {
-            TilePosition(Vec2::new(
-                current_position.0 .0.x,
-                current_position.0 .0.y + 1.0,
-            ))
-        } else if keyboard_input.pressed(KeyCode::Down) {
-            TilePosition(Vec2::new(
-                current_position.0 .0.x,
-                current_position.0 .0.y - 1.0,
-            ))
-        } else {
+        let mut next_position = TilePosition(current_position.0.0);
+        if keyboard_input.pressed(KeyCode::Left) {
+            next_position.0.x -= 1.0;
+        }
+        if keyboard_input.pressed(KeyCode::Right) {
+            next_position.0.x += 1.0;
+        } 
+        if keyboard_input.pressed(KeyCode::Up) {
+            next_position.0.y += 1.0;
+        } 
+        if keyboard_input.pressed(KeyCode::Down) {
+            next_position.0.y -= 1.0;
+        }
+
+        if next_position == current_position.0 {
             return;
-        };
+        }
 
         // limit player to screen bounds
         if next_position.0.x < 0.0

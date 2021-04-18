@@ -1,4 +1,4 @@
-// heavily borrowed from https://github.com/bevyengine/bevy/pull/1770/files
+// borrowed from https://github.com/bevyengine/bevy/pull/1770/files
 
 use bevy::asset::Handle;
 use bevy::core::{Time, Timer};
