@@ -15,8 +15,11 @@ impl FromWorld for Levels {
         Levels {
             current_level: 0,
             levels: vec![
-                "4_cars_with_walls.map".to_string(),
-                "level_2.map".to_string(),
+                "2_slow_cars.map".to_string(),
+                "4_cars.map".to_string(),
+                "4_faster_cars.map".to_string(),
+                "2_slow_cars_with_wall.map".to_string(),
+                "6_slow_cars_with_walls.map".to_string(),
             ],
         }
     }

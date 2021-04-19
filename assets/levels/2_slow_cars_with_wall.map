@@ -1,0 +1,58 @@
+(
+    rows: ((
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 8,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 8,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    )),
+    house: (
+        tile_x: 7,
+        tile_y: 11,
+    ),
+    bus_stop: (
+        tile_x: 7,
+        tile_y: 5,
+    ),
+    cars: [
+        (
+            tile_position: ((-2, 9)),
+            speed: 30,
+        ),
+        (
+            tile_position: ((16, 7)),
+            speed: -30,
+        ),
+    ],
+    walls: [(
+        row: 7,
+        columns: (false, false, false, false, true, true, true, true, 
+                    true, true, true, true, false, false, false, false),
+    )],
+)
