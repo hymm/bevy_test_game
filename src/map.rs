@@ -20,6 +20,8 @@ impl FromWorld for Levels {
                 "4_faster_cars.map".to_string(),
                 "2_slow_cars_with_wall.map".to_string(),
                 "6_slow_cars_with_walls.map".to_string(),
+                "4_lanes_closed.map".to_string(),
+                "too_busy.map".to_string(),
             ],
         }
     }

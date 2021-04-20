@@ -1,0 +1,116 @@
+(
+    rows: ((
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 3,
+    ), (
+        sprite: 7,
+    ), (
+        sprite: 7,
+    ), (
+        sprite: 11,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    ), (
+        sprite: 0,
+    ), (
+        sprite: 1,
+    )),
+    house: (
+        tile_x: 7,
+        tile_y: 11,
+    ),
+    bus_stop: (
+        tile_x: 7,
+        tile_y: 4,
+    ),
+    cars: [
+        (
+            tile_position: ((-2, 9)),
+            speed: 60,
+        ),
+        (
+            tile_position: ((0, 9)),
+            speed: 60,
+        ),
+        (
+            tile_position: ((2, 9)),
+            speed: 60,
+        ),
+        (
+            tile_position: ((4, 9)),
+            speed: 60,
+        ),
+        (
+            tile_position: ((6, 9)),
+            speed: 60,
+        ),
+        (
+            tile_position: ((8, 9)),
+            speed: 60,
+        ),
+        (
+            tile_position: ((-2, 8)),
+            speed: 30,
+        ),
+        (
+            tile_position: ((4, 8)),
+            speed: 30,
+        ),
+        (
+            tile_position: ((10, 8)),
+            speed: 30,
+        ),
+        (
+            tile_position: ((16, 7)),
+            speed: -30,
+        ),
+        (
+            tile_position: ((10, 7)),
+            speed: -30,
+        ),
+        (
+            tile_position: ((4, 7)),
+            speed: -30,
+        ),
+        (
+            tile_position: ((6, 6)),
+            speed: -60,
+        ),(
+            tile_position: ((8, 6)),
+            speed: -60,
+        ),(
+            tile_position: ((10, 6)),
+            speed: -60,
+        ),
+        (
+            tile_position: ((12, 6)),
+            speed: -60,
+        ),
+        (
+            tile_position: ((14, 6)),
+            speed: -60,
+        ),
+        (
+            tile_position: ((16, 6)),
+            speed: -60,
+        ),
+    ],
+    walls: [],
+)
