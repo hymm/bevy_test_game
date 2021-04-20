@@ -137,10 +137,7 @@ fn fully_offscreen(
 //     }
 // }
 
-fn despawn_out_of_bounds(
-    mut commands: Commands,
-    mut q: Query<Entity, (With<GoingOffscreen>, With<FullyOffscreen>)>,
-) {
+fn despawn_out_of_bounds(mut commands: Commands, mut q: Query<Entity, With<FullyOffscreen>>) {
     for entity in q.iter_mut() {
         commands.entity(entity).despawn();
     }
@@ -170,7 +167,7 @@ impl Plugin for CarPlugin {
                             .label("fully_offscreen")
                             .before("spawn_another_car"),
                     )
-                    .with_system(despawn_out_of_bounds.system().after("fully_offscreen"))
+                    .with_system(despawn_out_of_bounds.system().after("fully_offscreen")),
             );
     }
 }
