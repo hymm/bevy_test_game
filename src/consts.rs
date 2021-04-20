@@ -13,7 +13,6 @@ pub enum AppState {
 #[derive(Debug, Hash, Clone, Eq, PartialEq, SystemLabel)]
 pub enum SystemLabels {
     PlayerMovement,
-    CarMovement,
 }
 
 pub const TILE_WIDTH: f32 = 16.0;

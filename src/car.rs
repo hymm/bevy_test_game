@@ -84,7 +84,6 @@ fn spawn_another_car(
 }
 
 struct FullyOffscreen;
-struct GoingOffscreen;
 fn fully_offscreen(
     mut q: Query<
         (Entity, &PixelPosition, &Hitbox, &Velocity),

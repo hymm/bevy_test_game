@@ -154,6 +154,7 @@ fn load_map_atlas(
 
     for wall_row in map.walls.iter() {
         let mut c = 0;
+        
         for wall_exists in wall_row.columns.iter() {
             if *wall_exists {
                 commands

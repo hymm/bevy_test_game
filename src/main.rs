@@ -1,20 +1,20 @@
 #![allow(clippy::type_complexity)]
 
 use bevy::{
-    ecs::{
-        archetype::Archetypes,
-        component::Components,
-        entity::Entities,
-        schedule::ReportExecutionOrderAmbiguities,
-    },
-    // diagnostic::{
+    // ecs::{
+    //     archetype::Archetypes,
+    //     component::Components,
+    //     entity::Entities,
+    //     schedule::ReportExecutionOrderAmbiguities,
+    // },
+    //  diagnostic::{
     //     FrameTimeDiagnosticsPlugin,
     //     LogDiagnosticsPlugin,
     //     EntityCountDiagnosticsPlugin,
     // },
     input::system::exit_on_esc_system,
     prelude::*,
-    reflect::TypeRegistration,
+    // reflect::TypeRegistration,
     render::camera::{ScalingMode, WindowOrigin},
 };
 use bevy_mod_debugdump::schedule_graph_dot;
@@ -41,7 +41,7 @@ fn main() {
     })
     .add_plugins(DefaultPlugins)
     // .insert_resource(ReportExecutionOrderAmbiguities)
-    // .add_system(debug.system())
+    // .add_system(print_ecs_counts.system())
     // .add_plugin(FrameTimeDiagnosticsPlugin::default())
     // .add_plugin(bevy::diagnostic::EntityCountDiagnosticsPlugin::default())
     // Adds a system that prints diagnostics to the console
@@ -76,7 +76,7 @@ fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
     state.set(AppState::AssetLoading).unwrap();
 }
 
-// fn debug(entities: &Entities, c: &Components, a: &Archetypes) {
+// fn print_ecs_counts(entities: &Entities, c: &Components, a: &Archetypes) {
 //     info!("entities {}, components: {}, archetypes {}", entities.len(), c.len(), a.len());
 // }
 

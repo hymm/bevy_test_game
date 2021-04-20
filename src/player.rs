@@ -133,16 +133,16 @@ fn player_input(
     >,
 ) {
     for (player, current_position, mut animator, layer) in player_query.iter_mut() {
-        let mut next_position = TilePosition(current_position.0.0);
+        let mut next_position = TilePosition(current_position.0 .0);
         if keyboard_input.pressed(KeyCode::Left) {
             next_position.0.x -= 1.0;
         }
         if keyboard_input.pressed(KeyCode::Right) {
             next_position.0.x += 1.0;
-        } 
+        }
         if keyboard_input.pressed(KeyCode::Up) {
             next_position.0.y += 1.0;
-        } 
+        }
         if keyboard_input.pressed(KeyCode::Down) {
             next_position.0.y -= 1.0;
         }
@@ -222,7 +222,7 @@ fn player_step_sfx(
     *last_frame = animator.current_frame;
 }
 
-const PLAYER_ROLLING_SPEED: f32 = 90.0;
+const PLAYER_ROLLING_SPEED: f32 = 60.0;
 fn player_collides_car(
     mut commands: Commands,
     mut event_reader: EventReader<CollisionEvent<Player, Car>>,
@@ -231,7 +231,6 @@ fn player_collides_car(
             Entity,
             &mut Animator,
             &PixelPosition,
-            &CurrentPosition,
             &Layer,
         ),
         With<Player>,
@@ -241,7 +240,7 @@ fn player_collides_car(
     level: Res<CurrentLevel>,
 ) {
     if event_reader.iter().next().is_some() {
-        if let Ok((player, mut animator, current_position, tile_pos, layer)) =
+        if let Ok((player, mut animator, current_position, layer)) =
             player_query.single_mut()
         {
             if animator.current_animation == 2 {
