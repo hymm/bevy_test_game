@@ -153,9 +153,7 @@ fn load_map_atlas(
     }
 
     for wall_row in map.walls.iter() {
-        let mut c = 0;
-        
-        for wall_exists in wall_row.columns.iter() {
+        for (c, wall_exists) in wall_row.columns.iter().enumerate() {
             if *wall_exists {
                 commands
                     .spawn()
@@ -180,7 +178,6 @@ fn load_map_atlas(
                     .insert(Hitbox::new(Vec2::new(0.0, 0.0), Vec2::new(8.0, 8.0)))
                     .insert(Wall);
             }
-            c += 1;
         }
     }
 
