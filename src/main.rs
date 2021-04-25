@@ -78,24 +78,3 @@ fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
 
     state.set(AppState::AssetLoading).unwrap();
 }
-
-// fn print_ecs_counts(entities: &Entities, c: &Components, a: &Archetypes) {
-//     info!("entities {}, components: {}, archetypes {}", entities.len(), c.len(), a.len());
-// }
-
-// fn print_resources(archetypes: &Archetypes, components: &Components) {
-//     let mut r: Vec<String> = archetypes
-//         .resource()
-//         .components()
-//         .map(|id| components.get_info(id).unwrap())
-//         // get_short_name removes the path information
-//         // i.e. `bevy_audio::audio::Audio` -> `Audio`
-//         // if you want to see the path info replace
-//         // `TypeRegistration::get_short_name` with `String::from`
-//         .map(|info| TypeRegistration::get_short_name(info.name()))
-//         .collect();
-
-//     // sort list alphebetically
-//     r.sort();
-//     r.iter().for_each(|name| println!("{}", name));
-// }
