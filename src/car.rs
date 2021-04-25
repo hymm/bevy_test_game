@@ -1,7 +1,8 @@
 use crate::collisions::Hitbox;
 use crate::consts::{AppState, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
-use crate::coordinates::{Layer, PixelPosition, TilePosition, Velocity};
+use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocity};
 use crate::map::CurrentLevel;
+use crate::rng_bag::RngBag;
 use bevy::prelude::*;
 
 pub struct Car;
@@ -9,43 +10,63 @@ struct GoingOffscreenEvent(Entity, f32, f32);
 
 #[derive(Clone, Default)]
 struct Materials {
-    suv_material: Handle<ColorMaterial>,
+    suv_material: Handle<TextureAtlas>,
+}
+
+struct ColorBag(pub RngBag<u32>);
+impl Default for ColorBag {
+    fn default() -> ColorBag {
+        ColorBag(RngBag::<u32>::new(vec![0, 0, 0, 1, 2, 3, 4, 5]))
+    }
 }
 
 fn store_car_material(
     mut m: ResMut<Materials>,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    let handle = asset_server.get_handle("sprites/suv.png");
-    m.suv_material = materials.add(handle.into());
+    let texture_handle = asset_server.load("sprites/suv.png");
+    let sprite_size = SpriteSize(Vec2::new(14.0, 8.0));
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 6, 1);
+    m.suv_material = texture_atlases.add(texture_atlas);
 }
 
 #[derive(Bundle)]
 struct CarBundle {
     #[bundle]
-    sprite_bundle: SpriteBundle,
+    sprite_bundle: SpriteSheetBundle,
     car: Car,
     layer: Layer,
     pixel_position: PixelPosition,
     velocity: Velocity,
     hitbox: Hitbox,
+    sprite_size: SpriteSize,
 }
 
-fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, speed: f32) {
+fn spawn_car(
+    commands: &mut Commands,
+    m: Materials,
+    tile_pos: TilePosition,
+    speed: f32,
+    colors: &mut ColorBag,
+) {
     let travelling_left = speed < 0.0;
     commands.spawn_bundle(CarBundle {
-        sprite_bundle: SpriteBundle {
-            material: m.suv_material,
+        sprite_bundle: SpriteSheetBundle {
+            texture_atlas: m.suv_material.clone(),
             transform: Transform {
                 scale: Vec3::new(if travelling_left { -1.0 } else { 1.0 }, 1.0, 1.0),
                 translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
                 ..Default::default()
             },
-            sprite: Sprite::new(Vec2::new(14.0, 8.0)),
+            sprite: TextureAtlasSprite {
+                index: colors.0.get(),
+                ..Default::default()
+            },
             ..Default::default()
         },
         car: Car,
+        sprite_size: SpriteSize(Vec2::new(14.0, 8.0)),
         layer: Layer(1.0),
         pixel_position: PixelPosition(Vec2::new(
             tile_pos.0.x * TILE_SIZE as f32 + if travelling_left { 0.0 } else { 2.0 },
@@ -56,13 +77,19 @@ fn spawn_car(commands: &mut Commands, m: Materials, tile_pos: TilePosition, spee
     });
 }
 
-fn spawn_initial_cars(mut commands: Commands, m: Res<Materials>, current_level: Res<CurrentLevel>) {
+fn spawn_initial_cars(
+    mut commands: Commands,
+    m: Res<Materials>,
+    current_level: Res<CurrentLevel>,
+    mut color_bag: ResMut<ColorBag>,
+) {
     for car_data in current_level.0.cars.iter() {
         spawn_car(
             &mut commands,
             m.clone(),
             car_data.tile_position,
             car_data.speed,
+            &mut color_bag,
         );
     }
 }
@@ -71,6 +98,7 @@ fn spawn_another_car(
     mut commands: Commands,
     mut event_reader: EventReader<GoingOffscreenEvent>,
     m: Res<Materials>,
+    mut color_bag: ResMut<ColorBag>,
 ) {
     for ev in event_reader.iter() {
         let spawn_x = if ev.2 < 0.0 { 16.0 } else { -2.0 };
@@ -79,6 +107,7 @@ fn spawn_another_car(
             m.clone(),
             TilePosition(Vec2::new(spawn_x, ev.1)),
             ev.2,
+            &mut color_bag,
         );
     }
 }
@@ -146,6 +175,7 @@ pub struct CarPlugin;
 impl Plugin for CarPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<Materials>()
+            .init_resource::<ColorBag>()
             .add_event::<GoingOffscreenEvent>()
             .add_system_set(
                 SystemSet::on_enter(AppState::Loading)

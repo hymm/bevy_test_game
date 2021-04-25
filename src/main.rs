@@ -28,6 +28,7 @@ mod loader;
 mod map;
 mod particles;
 mod player;
+mod rng_bag;
 mod win_screen;
 use crate::consts::{AppState, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 

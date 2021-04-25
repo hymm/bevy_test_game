@@ -226,23 +226,13 @@ const PLAYER_ROLLING_SPEED: f32 = 60.0;
 fn player_collides_car(
     mut commands: Commands,
     mut event_reader: EventReader<CollisionEvent<Player, Car>>,
-    mut player_query: Query<
-        (
-            Entity,
-            &mut Animator,
-            &PixelPosition,
-            &Layer,
-        ),
-        With<Player>,
-    >,
+    mut player_query: Query<(Entity, &mut Animator, &PixelPosition, &Layer), With<Player>>,
     asset_server: Res<AssetServer>,
     audio: Res<Audio>,
     level: Res<CurrentLevel>,
 ) {
     if event_reader.iter().next().is_some() {
-        if let Ok((player, mut animator, current_position, layer)) =
-            player_query.single_mut()
-        {
+        if let Ok((player, mut animator, current_position, layer)) = player_query.single_mut() {
             if animator.current_animation == 2 {
                 return;
             }
