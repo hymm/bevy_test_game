@@ -2,9 +2,6 @@
 
 use bevy::{
     // ecs::{
-    //     archetype::Archetypes,
-    //     component::Components,
-    //     entity::Entities,
     //     schedule::ReportExecutionOrderAmbiguities,
     // },
     //  diagnostic::{
@@ -14,7 +11,6 @@ use bevy::{
     // },
     input::system::exit_on_esc_system,
     prelude::*,
-    // reflect::TypeRegistration,
     render::camera::{ScalingMode, WindowOrigin},
 };
 use bevy_mod_debugdump::schedule_graph_dot;
@@ -43,12 +39,10 @@ fn main() {
     })
     .add_plugins(DefaultPlugins)
     // .insert_resource(ReportExecutionOrderAmbiguities)
-    // .add_system(print_ecs_counts.system())
     // .add_plugin(FrameTimeDiagnosticsPlugin::default())
     // .add_plugin(bevy::diagnostic::EntityCountDiagnosticsPlugin::default())
     // Adds a system that prints diagnostics to the console
     // .add_plugin(LogDiagnosticsPlugin::default())
-    // .add_startup_system(print_resources.system())
     .add_system(exit_on_esc_system.system())
     .add_state(AppState::Setup)
     .add_system(animation::sprite_animation_system.system())
