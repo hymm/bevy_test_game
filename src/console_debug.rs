@@ -30,9 +30,7 @@ fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Ent
         .subcommand(
             App::new("list")
                 .about("list components, archetypes, entities")
-                .arg("--resources 'List resources'")
-                .arg("--components 'List compoenets'")
-                .group(ArgGroup::new("types").args(&["resources", "components"])),
+                .arg(Arg::new("type").index(1).possible_values(&["archetypes", "components", "entities", "systems", "resources"])),
         )
         .subcommand(
             App::new("find")
@@ -66,17 +64,17 @@ fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Ent
 
     match matches.subcommand() {
         Some(("exit", _)) => pause.0 = false,
-        Some(("list", matches)) => {
-            if matches.is_present("resources") {
-                print_resources(a, c);
-                return;
-            }
-
-            if matches.is_present("components") {
-                print_components(c);
-                return;
-            }
-        }
+        Some(("list", matches)) => match matches.value_of("type") {
+            Some(t) => match t {
+                "archetypes" => list_archetypes(a),
+                "entities" => {},
+                "resources" => list_resources(a, c),
+                "components" => list_components(c),
+                "systems" => {},
+                _ => {}
+            },
+            None => {}
+        },
         Some(("counts", _)) => print_ecs_counts(a, c, e),
         Some(("find", matches)) => {
             if matches.is_present("archetype") {
@@ -113,7 +111,7 @@ fn input_pause(keyboard_input: Res<Input<KeyCode>>, mut pause: ResMut<Pause>) {
     }
 }
 
-fn print_resources(archetypes: &Archetypes, components: &Components) {
+fn list_resources(archetypes: &Archetypes, components: &Components) {
     let mut r: Vec<String> = archetypes
         .resource()
         .components()
@@ -130,7 +128,7 @@ fn print_resources(archetypes: &Archetypes, components: &Components) {
     r.iter().for_each(|name| println!("{}", name));
 }
 
-fn print_components(components: &Components) {
+fn list_components(components: &Components) {
     let mut names = Vec::new();
     for id in 1..components.len() {
         if let Some(info) = components.get_info(ComponentId::new(id)) {
@@ -143,6 +141,17 @@ fn print_components(components: &Components) {
     names
         .iter()
         .for_each(|(id, name)| println!("{} {}", id, name));
+}
+
+fn list_archetypes(a: &Archetypes) {
+    println!("[id] [entity count]");
+    a.iter().for_each(|archetype| {
+        println!(
+            "{} {}",
+            archetype.id().index(),
+            archetype.entities().iter().count()
+        )
+    });
 }
 
 fn print_ecs_counts(a: &Archetypes, c: &Components, e: &Entities) {
@@ -174,15 +183,16 @@ fn print_archetype(a: &Archetypes, c: &Components, archetype_id: ArchetypeId) {
             .iter()
             .for_each(|entity| print!("{}, ", entity.id()));
         println!("");
-        print!(
-            "entity table rows ({}): ",
-            archetype.entity_table_rows().iter().count()
-        );
-        archetype
-            .entity_table_rows()
-            .iter()
-            .for_each(|row| print!("{}, ", row));
-        println!("");
+        // not sure what entity table rows is, so commenting out for now
+        // print!(
+        //     "entity table rows ({}): ",
+        //     archetype.entity_table_rows().iter().count()
+        // );
+        // archetype
+        //     .entity_table_rows()
+        //     .iter()
+        //     .for_each(|row| print!("{}, ", row));
+        // println!("");
         print!(
             "table_components ({}): ",
             archetype.table_components().iter().count()
