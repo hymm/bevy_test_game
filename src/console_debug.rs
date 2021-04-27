@@ -1,6 +1,6 @@
 use bevy::{
     ecs::{
-        archetype::Archetypes,
+        archetype::{ArchetypeId, Archetypes},
         component::{ComponentId, Components},
         entity::{Entities, Entity},
         schedule::ShouldRun,
@@ -40,9 +40,20 @@ fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Ent
                 .arg("--archetype   'Returns archetype ids matching filters'")
                 .arg("--entity      'Returns entity ids matching filters'")
                 .group(ArgGroup::new("search types").args(&["archetype", "entity"]))
-                .arg("--componentid=[ComponentId] 'Find by component id'"
-                )
-                .arg("--entityid    'Find by --entityid=<EntityId>, only works for --archetype"),
+                .arg("--componentid=[ComponentId] 'Find by component id'")
+                .arg("--entityid                  'Find by --entityid=<EntityId>, only works for --archetype"),
+        )
+        .subcommand(
+            App::new("info")
+                .about("Get info about a single thing")
+                .arg(Arg::new("type").index(1).possible_values(&[
+                    "archetype",
+                    "component",
+                    "entity",
+                    "system",
+                ]))
+                .arg("--id  =[Id]   'id to get'")
+                .arg("--name=[Name] 'name to get, only works for component and system'"),
         )
         .try_get_matches_from(args);
 
@@ -53,29 +64,38 @@ fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Ent
 
     let matches = matches_result.unwrap();
 
-    if let Some(_) = matches.subcommand_matches("exit") {
-        pause.0 = false;
-    }
+    match matches.subcommand() {
+        Some(("exit", _)) => pause.0 = false,
+        Some(("list", matches)) => {
+            if matches.is_present("resources") {
+                print_resources(a, c);
+                return;
+            }
 
-    if let Some(matches) = matches.subcommand_matches("list") {
-        if matches.is_present("resources") {
-            print_resources(a, c);
+            if matches.is_present("components") {
+                print_components(c);
+                return;
+            }
         }
-
-        if matches.is_present("components") {
-            print_components(c);
+        Some(("counts", _)) => print_ecs_counts(a, c, e),
+        Some(("find", matches)) => {
+            if matches.is_present("archetype") {
+                let component_id = matches.value_of_t("componentid").unwrap();
+                find_archetypes(a, Some(component_id), None);
+                return;
+            }
         }
-    }
-
-    if let Some(_) = matches.subcommand_matches("counts") {
-        print_ecs_counts(a, c, e);
-    }
-
-    if let Some(matches) = matches.subcommand_matches("find") {
-        if matches.is_present("archetype") {
-            let component_id = matches.value_of_t("componentid").unwrap();
-            find_archetypes(a, Some(component_id), None);
-        }
+        Some(("info", matches)) => match matches.value_of("type") {
+            Some(t) => match t {
+                "archetype" => {
+                    let id = matches.value_of_t("id").unwrap();
+                    print_archetype(a, c, ArchetypeId::new(id));
+                }
+                _ => {}
+            },
+            None => println!("invalid type: archetype"),
+        },
+        _ => {}
     }
 }
 
@@ -142,6 +162,51 @@ fn find_archetypes(a: &Archetypes, component_id: Option<usize>, entity_id: Optio
             .map(|archetype| archetype.id().index());
         archetypes.for_each(|id| println!("{}", id));
     };
+}
+
+fn print_archetype(a: &Archetypes, c: &Components, archetype_id: ArchetypeId) {
+    if let Some(archetype) = a.get(archetype_id) {
+        println!("id: {:?}", archetype.id());
+        println!("table_id: {:?}", archetype.table_id());
+        print!("entities ({}): ", archetype.entities().iter().count());
+        archetype
+            .entities()
+            .iter()
+            .for_each(|entity| print!("{}, ", entity.id()));
+        println!("");
+        print!(
+            "entity table rows ({}): ",
+            archetype.entity_table_rows().iter().count()
+        );
+        archetype
+            .entity_table_rows()
+            .iter()
+            .for_each(|row| print!("{}, ", row));
+        println!("");
+        print!(
+            "table_components ({}): ",
+            archetype.table_components().iter().count()
+        );
+        archetype
+            .table_components()
+            .iter()
+            .map(|id| (id.index(), c.get_info(*id).unwrap()))
+            .map(|(id, info)| (id, TypeRegistration::get_short_name(info.name())))
+            .for_each(|(id, name)| print!("{} {}, ", id, name));
+        println!("");
+
+        print!(
+            "sparse set components ({}): ",
+            archetype.sparse_set_components().iter().count()
+        );
+        archetype
+            .sparse_set_components()
+            .iter()
+            .map(|id| (id.index(), c.get_info(*id).unwrap()))
+            .map(|(id, info)| (id, TypeRegistration::get_short_name(info.name())))
+            .for_each(|(id, name)| print!("{} {}, ", id, name));
+        println!("");
+    }
 }
 
 pub struct ConsoleDebugPlugin;
