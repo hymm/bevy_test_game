@@ -11,6 +11,7 @@ use bevy::{
 use clap::{App, Arg, ArgGroup, ArgSettings};
 use std::io::{self, BufRead, Write};
 use std::process::exit;
+use std::error::Error;
 #[derive(Default)]
 struct Pause(bool);
 fn parse_input(world: &mut World) {
@@ -52,7 +53,8 @@ fn parse_input(world: &mut World) {
                             "resources",
                         ])
                         .required(true)
-                ).arg("--filter [Filter] 'filter list'"),
+                ).arg("-f, --filter [Filter] 'filter list'")
+                .arg("-l, --long 'display long name'"),
         )
         .subcommand(
             App::new("find")
@@ -102,7 +104,7 @@ fn parse_input(world: &mut World) {
                 "archetypes" | "archetype" => list_archetypes(a),
                 "entities" | "entity" => list_entities(e),
                 "resources" | "resource" => list_resources(a, c),
-                "components" | "component" => list_components(c),
+                "components" | "component" => list_components(c, !matches.is_present("long"), matches.value_of("filter")),
                 "systems" | "system" => {}
                 _ => {}
             },
@@ -189,15 +191,24 @@ fn list_resources(archetypes: &Archetypes, components: &Components) {
     r.iter().for_each(|name| println!("{}", name));
 }
 
-fn list_components(components: &Components) {
+fn list_components(components: &Components, short: bool, filter: Option<&str>) {
     let mut names = Vec::new();
     for id in 1..components.len() {
         if let Some(info) = components.get_info(ComponentId::new(id)) {
-            names.push((id, TypeRegistration::get_short_name(info.name())));
+            if short {
+                names.push((id, TypeRegistration::get_short_name(info.name())));
+            } else {
+                names.push((id, String::from(info.name())));
+            }
         }
     }
 
-    // sort list alphebetically
+    let mut names = if let Some(filter) = filter {
+        names.iter().cloned().filter(|(_, name)| name.contains(filter)).collect()
+    } else {
+        names
+    };
+    
     names.sort();
     names
         .iter()
