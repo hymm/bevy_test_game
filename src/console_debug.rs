@@ -1,8 +1,8 @@
 use bevy::{
     ecs::{
         archetype::{ArchetypeId, Archetypes},
-        component::{ComponentId, Components},
-        entity::{Entities, Entity},
+        component::{ComponentId, Components, StorageType},
+        entity::Entities,
         schedule::ShouldRun,
     },
     prelude::*,
@@ -13,13 +13,11 @@ use std::io::{self, BufRead, Write};
 use std::process::exit;
 #[derive(Default)]
 struct Pause(bool);
-fn parse_input(
-    mut pause: ResMut<Pause>,
-    entering_console: Res<EnteringConsole>,
-    a: &Archetypes,
-    c: &Components,
-    e: &Entities,
-) {
+fn parse_input(world: &mut World) {
+    let a = world.archetypes();
+    let c = world.components();
+    let e = world.entities();
+    let entering_console = world.get_resource::<EnteringConsole>().unwrap();
     if entering_console.0 {
         println!("Bevy Console Debugger.  Type 'help' for list of commands.");
     }
@@ -46,29 +44,42 @@ fn parse_input(
                 .arg(
                     Arg::new("type")
                         .index(1)
-                        .possible_values(&["archetypes", "components", "entities", "systems", "resources"])
+                        .possible_values(&[
+                            "archetypes",
+                            "components", 
+                            "entities",
+                            "systems",
+                            "resources",
+                        ])
                         .required(true)
-                    ),
+                ).arg("--filter [Filter] 'filter list'"),
         )
         .subcommand(
             App::new("find")
-                .about("Find archetypes and enties")
-                .arg(Arg::new("type").index(1).possible_values(&["archetype", "entity"]))
-                .group(ArgGroup::new("search types").args(&["archetype", "entity"]))
-                .arg("--componentid=[ComponentId] 'Find type by component id'")
-                .arg("--entityid=[EntityId]       'Find type by --entityid=<EntityId>, only works for --archetype"),
+                .about("find archetypes, systems, and entities")
+                .arg(
+                    Arg::new("type")
+                        .index(1)
+                        .possible_values(&[
+                            "archetypes", "archetype", 
+                            "entities", "entity", 
+                            "systems", "system"
+                        ]))
+                .arg("--componentid   [ComponentId]   'find types that have components with ComponentId'")
+                .arg("--componentname [ComponentName] 'find types that have components with ComponentName'")
+                .arg("--entityid      [EntityId]      'find types that have entities with EntityId, only works for archetypes"),
         )
         .subcommand(
             App::new("info")
-                .about("Get info about a single thing")
+                .about("get info about a single thing")
                 .arg(Arg::new("type").index(1).possible_values(&[
                     "archetype",
-                    "component",
-                    "entity",
+                    "component", 
+                    "entity", 
                     "system",
                 ]))
-                .arg("--id  =[Id]   'id to get'")
-                .arg("--name=[Name] 'name to get, only works for component and system'"),
+                .arg("--id   [Id]   'id to get'")
+                .arg("--name [Name] 'name to get, only works for component and system'"),
         )
         .try_get_matches_from(args);
 
@@ -81,6 +92,7 @@ fn parse_input(
 
     match matches.subcommand() {
         Some(("resume", _)) => {
+            let mut pause = world.get_resource_mut::<Pause>().unwrap();
             pause.0 = false;
             println!("...resuming game.")
         }
@@ -88,7 +100,7 @@ fn parse_input(
         Some(("list", matches)) => match matches.value_of("type") {
             Some(t) => match t {
                 "archetypes" | "archetype" => list_archetypes(a),
-                "entities" | "entity" => {}
+                "entities" | "entity" => list_entities(e),
                 "resources" | "resource" => list_resources(a, c),
                 "components" | "component" => list_components(c),
                 "systems" | "system" => {}
@@ -99,11 +111,20 @@ fn parse_input(
         Some(("counts", _)) => print_ecs_counts(a, c, e),
         Some(("find", matches)) => match matches.value_of("type") {
             Some(t) => match t {
-                "archetype" => {
-                    let component_id = matches.value_of_t("componentid").unwrap();
-                    find_archetypes(a, Some(component_id), None);
+                "archetypes" | "archetype" => {
+                    if let Ok(component_id) = matches.value_of_t("componentid") {
+                        find_archetypes_by_component_id(a, component_id);
+                    }
+
+                    if let Ok(entity_id) = matches.value_of_t("entityid") {
+                        find_archetypes_by_entity_id(a, entity_id);
+                    }
                 }
-                "component" => {}
+                "entities" | "entity" => {
+                    if let Ok(component_id) = matches.value_of_t("componentid") {
+                        find_entities_by_component_id(a, e, component_id);
+                    }
+                }
                 _ => {}
             },
             None => {}
@@ -111,8 +132,14 @@ fn parse_input(
         Some(("info", matches)) => match matches.value_of("type") {
             Some(t) => match t {
                 "archetype" => {
-                    let id = matches.value_of_t("id").unwrap();
-                    print_archetype(a, c, ArchetypeId::new(id));
+                    if let Ok(id) = matches.value_of_t("id") {
+                        print_archetype(a, c, ArchetypeId::new(id));
+                    }
+                }
+                "component" => {
+                    if let Ok(id) = matches.value_of_t("id") {
+                        print_component(c, id);
+                    }
                 }
                 _ => {}
             },
@@ -178,6 +205,10 @@ fn list_components(components: &Components) {
 }
 
 fn list_entities(e: &Entities) {
+    println!("[entity index] [archetype id]");
+    e.meta.iter().enumerate().for_each(|(id, meta)| {
+        println!("{} {}", id, meta.location.archetype_id.index());
+    });
 }
 
 fn list_archetypes(a: &Archetypes) {
@@ -200,14 +231,30 @@ fn print_ecs_counts(a: &Archetypes, c: &Components, e: &Entities) {
     );
 }
 
-fn find_archetypes(a: &Archetypes, component_id: Option<usize>, entity_id: Option<u32>) {
-    if let Some(component_id) = component_id {
-        let archetypes = a
-            .iter()
-            .filter(|archetype| archetype.components().any(|c| c.index() == component_id))
-            .map(|archetype| archetype.id().index());
-        archetypes.for_each(|id| println!("{}", id));
-    };
+fn find_archetypes_by_component_id(a: &Archetypes, component_id: usize) {
+    let archetypes = a
+        .iter()
+        .filter(|archetype| archetype.components().any(|c| c.index() == component_id))
+        .map(|archetype| archetype.id().index());
+    archetypes.for_each(|id| println!("{}", id));
+}
+
+fn find_archetypes_by_entity_id(a: &Archetypes, entity_id: u32) {
+    let archetypes = a
+        .iter()
+        .filter(|archetype| archetype.entities().iter().any(|e| e.id() == entity_id))
+        .map(|archetype| archetype.id().index());
+    archetypes.for_each(|id| println!("{}", id));
+}
+
+fn find_entities_by_component_id(a: &Archetypes, e: &Entities, component_id: usize) {
+    let entities = a
+        .iter()
+        .filter(|archetype| archetype.components().any(|c| c.index() == component_id))
+        .map(|archetype| archetype.entities())
+        .flatten();
+
+    entities.for_each(|id| println!("{}", id.id()));
 }
 
 fn print_archetype(a: &Archetypes, c: &Components, archetype_id: ArchetypeId) {
@@ -256,12 +303,30 @@ fn print_archetype(a: &Archetypes, c: &Components, archetype_id: ArchetypeId) {
     }
 }
 
+fn print_component(c: &Components, component_id: usize) {
+    if let Some(info) = c.get_info(ComponentId::new(component_id)) {
+        println!("Name: {}", info.name());
+        println!("Id: {}", info.id().index());
+        print!("StorageType: ");
+        match info.storage_type() {
+            StorageType::Table => println!("Table"),
+            StorageType::SparseSet => println!("SparseSet"),
+        }
+
+        println!("SendAndSync: {}", info.is_send_and_sync());
+    }
+}
+
 pub struct ConsoleDebugPlugin;
 impl Plugin for ConsoleDebugPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Pause(false))
             .insert_resource(EnteringConsole(false))
             .add_system(input_pause.system())
-            .add_system(parse_input.system().with_run_criteria(pause.system()));
+            .add_system(
+                parse_input
+                    .exclusive_system()
+                    .with_run_criteria(pause.system()),
+            );
     }
 }
