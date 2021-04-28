@@ -9,37 +9,54 @@ use bevy::{
     reflect::TypeRegistration,
 };
 use clap::{App, Arg, ArgGroup, ArgSettings};
-use std::io::{self, BufRead};
-
+use std::io::{self, BufRead, Write};
+use std::process::exit;
+#[derive(Default)]
 struct Pause(bool);
-
-fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Entities) {
-    println!(">>>");
-    let app_name = "BevyConsoleDebugger";
+fn parse_input(
+    mut pause: ResMut<Pause>,
+    entering_console: Res<EnteringConsole>,
+    a: &Archetypes,
+    c: &Components,
+    e: &Entities,
+) {
+    if entering_console.0 {
+        println!("Bevy Console Debugger.  Type 'help' for list of commands.");
+    }
+    print!(">>> ");
+    io::stdout().flush().unwrap();
+    let app_name = "";
     let stdin = io::stdin();
     let line = stdin.lock().lines().next().unwrap().unwrap();
+
+    println!("");
     let split = line.split_whitespace();
     let mut args = vec![app_name];
     args.append(&mut split.collect());
 
     let matches_result = App::new(app_name)
-        .subcommand(App::new("exit").about("exit debug mode"))
+        .subcommand(App::new("resume").about("resume running game"))
+        .subcommand(App::new("quit").about("quit game"))
         .subcommand(
             App::new("counts").about("print counts of archetypes, components, and entities"),
         )
         .subcommand(
             App::new("list")
-                .about("list components, archetypes, entities")
-                .arg(Arg::new("type").index(1).possible_values(&["archetypes", "components", "entities", "systems", "resources"])),
+                .about("print a list of <type>")
+                .arg(
+                    Arg::new("type")
+                        .index(1)
+                        .possible_values(&["archetypes", "components", "entities", "systems", "resources"])
+                        .required(true)
+                    ),
         )
         .subcommand(
             App::new("find")
                 .about("Find archetypes and enties")
-                .arg("--archetype   'Returns archetype ids matching filters'")
-                .arg("--entity      'Returns entity ids matching filters'")
+                .arg(Arg::new("type").index(1).possible_values(&["archetype", "entity"]))
                 .group(ArgGroup::new("search types").args(&["archetype", "entity"]))
-                .arg("--componentid=[ComponentId] 'Find by component id'")
-                .arg("--entityid                  'Find by --entityid=<EntityId>, only works for --archetype"),
+                .arg("--componentid=[ComponentId] 'Find type by component id'")
+                .arg("--entityid=[EntityId]       'Find type by --entityid=<EntityId>, only works for --archetype"),
         )
         .subcommand(
             App::new("info")
@@ -63,26 +80,34 @@ fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Ent
     let matches = matches_result.unwrap();
 
     match matches.subcommand() {
-        Some(("exit", _)) => pause.0 = false,
+        Some(("resume", _)) => {
+            pause.0 = false;
+            println!("...resuming game.")
+        }
+        Some(("quit", _)) => exit(0),
         Some(("list", matches)) => match matches.value_of("type") {
             Some(t) => match t {
-                "archetypes" => list_archetypes(a),
-                "entities" => {},
-                "resources" => list_resources(a, c),
-                "components" => list_components(c),
-                "systems" => {},
+                "archetypes" | "archetype" => list_archetypes(a),
+                "entities" | "entity" => {}
+                "resources" | "resource" => list_resources(a, c),
+                "components" | "component" => list_components(c),
+                "systems" | "system" => {}
                 _ => {}
             },
             None => {}
         },
         Some(("counts", _)) => print_ecs_counts(a, c, e),
-        Some(("find", matches)) => {
-            if matches.is_present("archetype") {
-                let component_id = matches.value_of_t("componentid").unwrap();
-                find_archetypes(a, Some(component_id), None);
-                return;
-            }
-        }
+        Some(("find", matches)) => match matches.value_of("type") {
+            Some(t) => match t {
+                "archetype" => {
+                    let component_id = matches.value_of_t("componentid").unwrap();
+                    find_archetypes(a, Some(component_id), None);
+                }
+                "component" => {}
+                _ => {}
+            },
+            None => {}
+        },
         Some(("info", matches)) => match matches.value_of("type") {
             Some(t) => match t {
                 "archetype" => {
@@ -95,9 +120,18 @@ fn parse_input(mut pause: ResMut<Pause>, a: &Archetypes, c: &Components, e: &Ent
         },
         _ => {}
     }
+
+    println!("");
 }
 
-fn pause(pause: Res<Pause>) -> ShouldRun {
+struct EnteringConsole(bool);
+fn pause(
+    pause: Res<Pause>,
+    mut last_pause: Local<Pause>,
+    mut entering_console: ResMut<EnteringConsole>,
+) -> ShouldRun {
+    entering_console.0 = (pause.0 != last_pause.0) && pause.0;
+    last_pause.0 = pause.0;
     if pause.0 {
         ShouldRun::YesAndCheckAgain
     } else {
@@ -141,6 +175,9 @@ fn list_components(components: &Components) {
     names
         .iter()
         .for_each(|(id, name)| println!("{} {}", id, name));
+}
+
+fn list_entities(e: &Entities) {
 }
 
 fn list_archetypes(a: &Archetypes) {
@@ -223,6 +260,7 @@ pub struct ConsoleDebugPlugin;
 impl Plugin for ConsoleDebugPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Pause(false))
+            .insert_resource(EnteringConsole(false))
             .add_system(input_pause.system())
             .add_system(parse_input.system().with_run_criteria(pause.system()));
     }
