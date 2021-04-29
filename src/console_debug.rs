@@ -8,10 +8,10 @@ use bevy::{
     prelude::*,
     reflect::TypeRegistration,
 };
-use clap::{App, Arg, ArgGroup, ArgSettings};
+use clap::{App, Arg, ArgGroup, ArgSettings, AppSettings};
+use std::error::Error;
 use std::io::{self, BufRead, Write};
 use std::process::exit;
-use std::error::Error;
 #[derive(Default)]
 struct Pause(bool);
 fn parse_input(world: &mut World) {
@@ -40,48 +40,68 @@ fn parse_input(world: &mut World) {
             App::new("counts").about("print counts of archetypes, components, and entities"),
         )
         .subcommand(
-            App::new("list")
-                .about("print a list of <type>")
-                .arg(
-                    Arg::new("type")
-                        .index(1)
-                        .possible_values(&[
-                            "archetypes",
-                            "components", 
-                            "entities",
-                            "systems",
-                            "resources",
-                        ])
+            App::new("archetypes")
+                .about("get archetypes info")
+                .alias("archetype")
+                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .subcommand(App::new("list")
+                    .about("list all archetypes")
+                )
+                .subcommand(App::new("info")
+                    .about("get info of one archetype")
+                    .arg("--id [Id] 'id to get'")
+                    .group(ArgGroup::new("search params")
+                        .args(&["id"])
                         .required(true)
-                ).arg("-f, --filter [Filter] 'filter list'")
-                .arg("-l, --long 'display long name'"),
+                    )
+                )
+                .subcommand(App::new("find")
+                    .about("find a archetype")
+                    .arg("--componentid   [ComponentId]   'find types that have components with ComponentId'")
+                    .arg("--componentname [ComponentName] 'find types that have components with ComponentName'")
+                    .arg("--entityid      [EntityId]      'find types that have entities with EntityId")
+                    .group(ArgGroup::new("search params")
+                        .args(&["componentid", "componentname", "entityid"])
+                        .required(true)
+                    )
+                )
         )
         .subcommand(
-            App::new("find")
-                .about("find archetypes, systems, and entities")
-                .arg(
-                    Arg::new("type")
-                        .index(1)
-                        .possible_values(&[
-                            "archetypes", "archetype", 
-                            "entities", "entity", 
-                            "systems", "system"
-                        ]))
-                .arg("--componentid   [ComponentId]   'find types that have components with ComponentId'")
-                .arg("--componentname [ComponentName] 'find types that have components with ComponentName'")
-                .arg("--entityid      [EntityId]      'find types that have entities with EntityId, only works for archetypes"),
+            App::new("components")
+                .about("get components info")
+                .alias("component")
+                .subcommand(App::new("list")
+                    .about("list all components")
+                    .arg("-f, --filter [Filter] 'filter list'")
+                    .arg("-l, --long 'display long name'"),
+                )
+                .subcommand(App::new("info")
+                    .about("get info of one component")
+                    .arg("--id   [Id]   'id to get'")
+                    .arg("--name [Name] 'name to get'")
+                    .group(ArgGroup::new("search params")
+                        .args(&["id", "name"])
+                        .required(true)
+                    )
+                )
         )
         .subcommand(
-            App::new("info")
-                .about("get info about a single thing")
-                .arg(Arg::new("type").index(1).possible_values(&[
-                    "archetype",
-                    "component", 
-                    "entity", 
-                    "system",
-                ]))
-                .arg("--id   [Id]   'id to get'")
-                .arg("--name [Name] 'name to get, only works for component and system'"),
+            App::new("entities")
+                .about("get entity info")
+                .subcommand(
+                    App::new("list")
+                        .about("list all entities")
+                )
+                .subcommand(
+                    App::new("find")
+                        .about("find entity matching search params")
+                        .arg("--componentid   [ComponentId]   'find types that have components with ComponentId'")
+                        .arg("--componentname [ComponentName] 'find types that have components with ComponentName'")
+                        .group(ArgGroup::new("search params")
+                            .args(&["componentid", "componentname"])
+                            .required(true)
+                        )
+                )
         )
         .try_get_matches_from(args);
 
@@ -99,54 +119,47 @@ fn parse_input(world: &mut World) {
             println!("...resuming game.")
         }
         Some(("quit", _)) => exit(0),
-        Some(("list", matches)) => match matches.value_of("type") {
-            Some(t) => match t {
-                "archetypes" | "archetype" => list_archetypes(a),
-                "entities" | "entity" => list_entities(e),
-                "resources" | "resource" => list_resources(a, c),
-                "components" | "component" => list_components(c, !matches.is_present("long"), matches.value_of("filter")),
-                "systems" | "system" => {}
-                _ => {}
+        Some(("archetypes", matches)) => match matches.subcommand() {
+            Some(("list", _)) => list_archetypes(a),
+            Some(("find", matches)) => {
+                if let Ok(component_id) = matches.value_of_t("componentid") {
+                    find_archetypes_by_component_id(a, component_id);
+                }
+
+                if let Ok(entity_id) = matches.value_of_t("entityid") {
+                    find_archetypes_by_entity_id(a, entity_id);
+                }
             },
-            None => {}
+            Some(("info", matches)) => {
+                if let Ok(id) = matches.value_of_t("id") {
+                    print_archetype(a, c, ArchetypeId::new(id));
+                }
+            },
+            _ => {}
+        },
+        Some(("components", matches)) => match matches.subcommand() {
+            Some(("list", _)) => list_components(c, !matches.is_present("long"), matches.value_of("filter")),
+            Some(("info", matches)) => {
+                if let Ok(id) = matches.value_of_t("id") {
+                    print_component(c, id);
+                }
+            },
+            _ => {}
+        },
+        Some(("entities", matches)) => match matches.subcommand() {
+            Some(("list", _)) => list_entities(e),
+            Some(("find", matches)) => {
+                if let Ok(component_id) = matches.value_of_t("componentid") {
+                    find_entities_by_component_id(a, e, component_id);
+                }
+            },
+            _ => {}
+        },
+        Some(("resources", matches)) => match matches.subcommand() {
+            Some(("list", _)) => list_resources(a, c),
+            _ => {}
         },
         Some(("counts", _)) => print_ecs_counts(a, c, e),
-        Some(("find", matches)) => match matches.value_of("type") {
-            Some(t) => match t {
-                "archetypes" | "archetype" => {
-                    if let Ok(component_id) = matches.value_of_t("componentid") {
-                        find_archetypes_by_component_id(a, component_id);
-                    }
-
-                    if let Ok(entity_id) = matches.value_of_t("entityid") {
-                        find_archetypes_by_entity_id(a, entity_id);
-                    }
-                }
-                "entities" | "entity" => {
-                    if let Ok(component_id) = matches.value_of_t("componentid") {
-                        find_entities_by_component_id(a, e, component_id);
-                    }
-                }
-                _ => {}
-            },
-            None => {}
-        },
-        Some(("info", matches)) => match matches.value_of("type") {
-            Some(t) => match t {
-                "archetype" => {
-                    if let Ok(id) = matches.value_of_t("id") {
-                        print_archetype(a, c, ArchetypeId::new(id));
-                    }
-                }
-                "component" => {
-                    if let Ok(id) = matches.value_of_t("id") {
-                        print_component(c, id);
-                    }
-                }
-                _ => {}
-            },
-            None => println!("invalid type: archetype"),
-        },
         _ => {}
     }
 
@@ -204,11 +217,15 @@ fn list_components(components: &Components, short: bool, filter: Option<&str>) {
     }
 
     let mut names = if let Some(filter) = filter {
-        names.iter().cloned().filter(|(_, name)| name.contains(filter)).collect()
+        names
+            .iter()
+            .cloned()
+            .filter(|(_, name)| name.contains(filter))
+            .collect()
     } else {
         names
     };
-    
+
     names.sort();
     names
         .iter()
@@ -247,6 +264,8 @@ fn find_archetypes_by_component_id(a: &Archetypes, component_id: usize) {
         .iter()
         .filter(|archetype| archetype.components().any(|c| c.index() == component_id))
         .map(|archetype| archetype.id().index());
+    
+    println!("found archetype ids:");
     archetypes.for_each(|id| println!("{}", id));
 }
 
@@ -255,6 +274,8 @@ fn find_archetypes_by_entity_id(a: &Archetypes, entity_id: u32) {
         .iter()
         .filter(|archetype| archetype.entities().iter().any(|e| e.id() == entity_id))
         .map(|archetype| archetype.id().index());
+        
+    println!("found archetype ids:");
     archetypes.for_each(|id| println!("{}", id));
 }
 
@@ -311,6 +332,8 @@ fn print_archetype(a: &Archetypes, c: &Components, archetype_id: ArchetypeId) {
             .map(|(id, info)| (id, TypeRegistration::get_short_name(info.name())))
             .for_each(|(id, name)| print!("{} {}, ", id, name));
         println!("");
+    } else {
+        println!("No archetype found with id: {}", archetype_id.index());
     }
 }
 
@@ -325,6 +348,8 @@ fn print_component(c: &Components, component_id: usize) {
         }
 
         println!("SendAndSync: {}", info.is_send_and_sync());
+    } else {
+        println!("No component found with id: {}", component_id);
     }
 }
 
