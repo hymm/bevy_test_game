@@ -53,7 +53,7 @@ fn main() {
     .add_plugin(map::MapPlugin)
     .add_plugin(car::CarPlugin)
     .add_plugin(player::PlayerPlugin)
-    .add_plugin(particles::DustSystem)
+    .add_plugin(particles::ParticleSystem)
     .add_plugin(win_screen::WinScreenPlugin)
     .add_plugin(ConsoleDebugPlugin)
     .run();
