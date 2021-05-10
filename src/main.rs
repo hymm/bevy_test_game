@@ -13,12 +13,12 @@ use bevy::{
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
 };
+use bevy_mod_debug_console::ConsoleDebugPlugin;
 use bevy_mod_debugdump::schedule_graph_dot;
 
 mod animation;
 mod car;
 mod collisions;
-mod console_debug;
 mod consts;
 mod coordinates;
 mod loader;
@@ -55,7 +55,7 @@ fn main() {
     .add_plugin(player::PlayerPlugin)
     .add_plugin(particles::DustSystem)
     .add_plugin(win_screen::WinScreenPlugin)
-    .add_plugin(console_debug::ConsoleDebugPlugin)
+    .add_plugin(ConsoleDebugPlugin)
     .run();
 
     println!("{}", schedule_graph_dot(&app.app.schedule));
