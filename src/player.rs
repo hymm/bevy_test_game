@@ -15,7 +15,7 @@ struct Materials {
 const PLAYER_SPEED: f32 = 60.0;
 pub struct Player;
 struct CurrentPosition(TilePosition);
-struct NextPosition(TilePosition);
+struct NextPosition(Option<TilePosition>);
 
 #[derive(Bundle)]
 struct PlayerBundle {
@@ -23,12 +23,14 @@ struct PlayerBundle {
     sprite_bundle: SpriteSheetBundle,
     player: Player,
     current_position: CurrentPosition,
+    next_position: NextPosition,
     pixel_position: PixelPosition,
     layer: Layer,
     sprite_size: SpriteSize,
     hurtbox: Hurtbox,
     animator: Animator,
     animations: Animations,
+    velocity: Velocity,
 }
 
 fn setup_player(
@@ -57,7 +59,9 @@ fn setup_player(
         },
         player: Player,
         current_position: CurrentPosition(player_pos),
+        next_position: NextPosition(None),
         pixel_position: PixelPosition(player_pos.get_pixel_position().0),
+        velocity: Velocity(Vec2::new(0.0, 0.0)),
         layer: Layer(player_layer),
         sprite_size,
         hurtbox: Hurtbox::new(Vec2::new(-0.5, 0.0), Vec2::new(7.0, 8.0)),
@@ -128,11 +132,21 @@ fn player_input(
     mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
     mut player_query: Query<
-        (Entity, &CurrentPosition, &mut Animator, &Layer),
-        (With<Player>, Without<NextPosition>),
+        (
+            Entity,
+            &CurrentPosition,
+            &mut Animator,
+            &Layer,
+            &NextPosition,
+        ),
+        With<Player>,
     >,
 ) {
-    for (player, current_position, mut animator, layer) in player_query.iter_mut() {
+    for (player, current_position, mut animator, layer, next_position) in player_query.iter_mut() {
+        if next_position.0 != None {
+            continue;
+        }
+
         let mut next_position = TilePosition(current_position.0 .0);
         if keyboard_input.pressed(KeyCode::Left) {
             next_position.0.x -= 1.0;
@@ -162,7 +176,9 @@ fn player_input(
 
         animator.current_animation = 1;
         animator.current_frame = 0;
-        commands.entity(player).insert(NextPosition(next_position));
+        commands
+            .entity(player)
+            .insert(NextPosition(Some(next_position)));
         let current_translation = current_position
             .0
             .get_translation(Vec2::new(8.0, 8.0), layer.0);
@@ -189,21 +205,21 @@ fn player_movement_done(
     >,
 ) {
     for (player, next_position, transform, v, mut animator, layer) in player_query.iter_mut() {
-        let diff = next_position
-            .0
-            .get_translation(Vec2::new(8.0, 8.0), layer.0)
-            - transform.translation;
-        if diff.truncate().dot(v.0) <= 0.0 {
-            let new_current_position = CurrentPosition(next_position.0);
-            let new_pixel_position = new_current_position.0.get_pixel_position();
-            commands
-                .entity(player)
-                .insert(new_current_position)
-                .insert(new_pixel_position)
-                .remove::<Velocity>()
-                .remove::<NextPosition>();
-            animator.current_animation = 0;
-            animator.current_frame = 0;
+        if let Some(next_position) = next_position.0 {
+            let diff =
+                next_position.get_translation(Vec2::new(8.0, 8.0), layer.0) - transform.translation;
+            if diff.truncate().dot(v.0) <= 0.0 {
+                let new_current_position = CurrentPosition(next_position);
+                let new_pixel_position = new_current_position.0.get_pixel_position();
+                commands
+                    .entity(player)
+                    .insert(new_current_position)
+                    .insert(new_pixel_position)
+                    .insert(Velocity(Vec2::new(0.0, 0.0)))
+                    .insert(NextPosition(None));
+                animator.current_animation = 0;
+                animator.current_frame = 0;
+            }
         }
     }
 }
@@ -240,7 +256,9 @@ fn player_collides_car(
                 level.0.house.tile_x + 1.0,
                 level.0.house.tile_y - 1.0,
             ));
-            commands.entity(player).insert(NextPosition(spawn_pos));
+            commands
+                .entity(player)
+                .insert(NextPosition(Some(spawn_pos)));
 
             let current_translation =
                 current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
@@ -269,9 +287,9 @@ fn player_collides_wall(
             }
             commands
                 .entity(player)
-                .remove::<NextPosition>()
                 .insert(current_position.0.get_pixel_position())
-                .remove::<Velocity>();
+                .insert(Velocity(Vec2::new(0.0, 0.0)))
+                .insert(NextPosition(None));
             animator.current_animation = 0;
             animator.current_frame = 0;
         }

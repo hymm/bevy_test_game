@@ -72,30 +72,28 @@ fn spawn_new_dust(
     for (player_pos, animator) in player_query.iter() {
         if animator.current_animation == 2 {
             let dust_pos = PixelPosition(player_pos.0 + Vec2::new(8.0, 4.0));
-            commands
-                .spawn()
-                .insert_bundle(
-                    ParticleBundle {
-                        sprite_bundle: SpriteBundle {
-                            sprite: Sprite::new(Vec2::new(1.0, 1.0)),
-                            material: dust_color.material.clone(),
-                            transform: Transform {
-                                translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), dust_layer),
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        },
-                        particle: Particle,
-                        dust_pos,
-                        layer: Layer(dust_layer),
-                        lifetime: Lifetime { current_lifetime: config.lifetime },
-                        velocity: Velocity(Vec2::new(
-                            rng.gen_range(config.x_velocity_range.clone()),
-                            rng.gen_range(config.y_velocity_range.clone()),
-                        )),
-                        acceleration: Acceleration(Vec2::new(0.0, config.gravity)),
-                    }
-                );
+            commands.spawn().insert_bundle(ParticleBundle {
+                sprite_bundle: SpriteBundle {
+                    sprite: Sprite::new(Vec2::new(1.0, 1.0)),
+                    material: dust_color.material.clone(),
+                    transform: Transform {
+                        translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), dust_layer),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                particle: Particle,
+                dust_pos,
+                layer: Layer(dust_layer),
+                lifetime: Lifetime {
+                    current_lifetime: config.lifetime,
+                },
+                velocity: Velocity(Vec2::new(
+                    rng.gen_range(config.x_velocity_range.clone()),
+                    rng.gen_range(config.y_velocity_range.clone()),
+                )),
+                acceleration: Acceleration(Vec2::new(0.0, config.gravity)),
+            });
         }
     }
 }
