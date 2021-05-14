@@ -7,9 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.5"
-bevy_mod_debugdump = "0.1"
-bevy_mod_debug_console = { path = "../bevy_mod_debug_console" }
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
+# bevy_mod_debugdump = "0.1"
+# bevy_mod_debug_console = { path = "../bevy_mod_debug_console" }
 rand = "0.8.0"
 ron = "0.6.4"
 serde = { version = "1.0", features = ["derive"] }

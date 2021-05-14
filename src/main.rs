@@ -13,8 +13,8 @@ use bevy::{
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
 };
-use bevy_mod_debug_console::ConsoleDebugPlugin;
-use bevy_mod_debugdump::schedule_graph_dot;
+// use bevy_mod_debug_console::ConsoleDebugPlugin;
+// use bevy_mod_debugdump::schedule_graph_dot;
 
 mod animation;
 mod car;
@@ -55,10 +55,10 @@ fn main() {
     .add_plugin(player::PlayerPlugin)
     .add_plugin(particles::ParticleSystem)
     .add_plugin(win_screen::WinScreenPlugin)
-    .add_plugin(ConsoleDebugPlugin)
+    // .add_plugin(ConsoleDebugPlugin)
     .run();
 
-    println!("{}", schedule_graph_dot(&app.app.schedule));
+    // println!("{}", schedule_graph_dot(&app.app.schedule));
 }
 
 fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
