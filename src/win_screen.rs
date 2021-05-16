@@ -3,11 +3,24 @@ use crate::map::Levels;
 use bevy::prelude::*;
 
 struct RootNode;
+struct VictoryScreen;
 fn spawn_end_screen(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    let handle = asset_server.load("sprites/victory_screen.png");
+    commands
+        .spawn_bundle(SpriteBundle {
+            material: materials.add(handle.into()),
+            transform: Transform {
+                translation: Vec3::new(64.0, 64.0, 0.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(VictoryScreen);
+
     commands
         .spawn()
         .insert_bundle(NodeBundle {
@@ -33,8 +46,8 @@ fn spawn_end_screen(
                     "You Win!",
                     TextStyle {
                         font: asset_server.load("fonts/silkscreen/slkscreb.ttf"),
-                        font_size: 24.0,
-                        color: Color::WHITE,
+                        font_size: 40.0,
+                        color: Color::rgb(95.0, 87.0, 79.0),
                     },
                     Default::default(),
                 ),
@@ -47,11 +60,11 @@ fn spawn_end_screen(
                     ..Default::default()
                 },
                 text: Text::with_section(
-                    "Press X or Click \nto Restart",
+                    "Press X to Restart",
                     TextStyle {
                         font: asset_server.load("fonts/silkscreen/slkscreb.ttf"),
-                        font_size: 24.0,
-                        color: Color::WHITE,
+                        font_size: 16.0,
+                        color: Color::rgb(95.0, 87.0, 79.0),
                     },
                     TextAlignment {
                         horizontal: HorizontalAlign::Center,
@@ -74,9 +87,17 @@ fn restart(
     }
 }
 
-fn despawn_win_screen(mut commands: Commands, q: Query<Entity, With<RootNode>>) {
-    if let Ok(entity) = q.single() {
+fn despawn_win_screen(
+    mut commands: Commands,
+    text_query: Query<Entity, With<RootNode>>,
+    background_query: Query<Entity, With<VictoryScreen>>,
+) {
+    if let Ok(entity) = text_query.single() {
         commands.entity(entity).despawn_recursive();
+    }
+
+    if let Ok(entity) = background_query.single() {
+        commands.entity(entity).despawn();
     }
 }
 
