@@ -56,6 +56,20 @@ struct ParticleBundle {
     acceleration: Acceleration,
 }
 
+// spawn dust to mitigate hitching
+fn setup_dust(mut commands: Commands, dust_color: Res<ParticleColor>) {
+    let dust_pos = PixelPosition(Vec2::new(200.0, 200.0));
+    commands.spawn().insert_bundle(SpriteBundle {
+        sprite: Sprite::new(Vec2::new(1.0, 1.0)),
+        material: dust_color.material.clone(),
+        transform: Transform {
+            translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), 1.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+}
+
 fn spawn_new_dust(
     mut commands: Commands,
     player_query: Query<(&PixelPosition, &Animator), With<Player>>,
@@ -120,6 +134,7 @@ impl Plugin for ParticleSystem {
                 Duration::from_millis((0.75 / 60.0 * 1000.0) as u64),
                 true,
             )))
+            .add_system_set(SystemSet::on_enter(AppState::InGame).with_system(setup_dust.system()))
             .add_system_set(
                 SystemSet::on_update(AppState::InGame)
                     .with_system(spawn_new_dust.system())
