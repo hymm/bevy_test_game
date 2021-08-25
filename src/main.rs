@@ -13,7 +13,7 @@ use bevy::{
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
 };
-// use bevy_mod_debug_console::ConsoleDebugPlugin;
+use bevy_mod_debug_console::ConsoleDebugPlugin;
 // use bevy_mod_debugdump::schedule_graph_dot;
 
 mod animation;
@@ -55,7 +55,7 @@ fn main() {
     .add_plugin(player::PlayerPlugin)
     .add_plugin(particles::ParticleSystem)
     .add_plugin(win_screen::WinScreenPlugin)
-    // .add_plugin(ConsoleDebugPlugin)
+    .add_plugin(ConsoleDebugPlugin)
     .run();
 
     // println!("{}", schedule_graph_dot(&app.app.schedule));
