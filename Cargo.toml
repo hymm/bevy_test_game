@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 bevy = "0.5"
-# bevy_mod_debugdump = "0.1"
+bevy_mod_debugdump = "0.2"
 bevy_mod_debug_console = "0.0.2"
 rand = "0.8.0"
 ron = "0.6.4"
