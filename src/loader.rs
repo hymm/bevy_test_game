@@ -17,7 +17,7 @@ struct SfxHandles {
     handles: Vec<HandleUntyped>,
 }
 
-fn setup_loader(
+fn load_all_assets(
     asset_server: Res<AssetServer>,
     mut sprite_handles: ResMut<SpriteHandles>,
     mut map_handles: ResMut<MapHandles>,
@@ -60,7 +60,7 @@ impl Plugin for AssetsLoadingPlugin {
             .init_resource::<SfxHandles>()
             .add_system_set(
                 SystemSet::on_enter(AppState::AssetLoading)
-                    .with_system(setup_loader.system())
+                    .with_system(load_all_assets.system())
                     .before("check_assets"),
             )
             .add_system_set(

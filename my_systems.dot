@@ -1,0 +1,206 @@
+digraph schedule {
+    graph [layout=dot]
+    bgcolor="#333333"
+    node ["shape"="box", "margin"="0.05", "height"="0.4"];
+    
+    // these are bevy systems automaticall added, may add them back in later
+    // A ["label"="Events<CollisionEvent<Player, Car>>update_system"]
+    // B ["label"="Events<CollisionEvent<Player, Wall>>update_system"]
+    // C ["label"="Events<GoingOffscreenEvent>update_system"]
+
+    
+    
+    
+
+   // nodes with commands
+    N, S, T, U, V, X, AB, AC, AD, AE, AF, AG, AI [color="#ffdddd", style=filled]
+    
+    // nodes with app state changes and commands
+    E, P, Q [color="#ffdddd", style=filled]
+
+    
+    // no state applied
+    D ["label"="sprite_animation_system", color=white, style=filled]
+
+    subgraph cluster_app_state_setup {
+        style=rounded
+        "color"="#e1e5ea";
+        "bgcolor"="#e1e5ea";
+        label="State::Setup"
+
+        subgraph cluster_on_enter {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_enter"
+            E ["label"="setup_camera"]
+        }
+    }
+
+    subgraph cluster_app_state_asset_loading {
+        style=rounded
+        "color"="#e1e5ea";
+        "bgcolor"="#e1e5ea";
+        label="State::Asset_Loading"
+        MARKER_cluster_app_state_asset_loading ["style"="invis"]
+        
+        subgraph cluster_on_enter {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_enter"
+            F ["label"="load_all_assets"]
+        }
+        subgraph cluster_on_update {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_update"
+
+            G ["label"="track_assets_ready"]
+        }
+    }
+
+    subgraph cluster_app_state_loading {
+        style=rounded
+        "color"="#e1e5ea";
+        "bgcolor"="#e1e5ea";
+        label="State::Loading"
+        MARKER_cluster_app_state_loading ["style"="invis"]
+        
+        subgraph cluster_on_enter {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_enter"
+            
+            X ["label"="setup_player"]
+            O ["label"="load_current_map"]
+            P ["label"="load_map_atlas"]
+            R ["label"="store_car_material"]
+            S ["label"="spawn_initial_cars"]
+        }
+    }
+
+    subgraph cluster_app_state_in_game {
+        style=rounded
+        "color"="#e1e5ea";
+        "bgcolor"="#e1e5ea";
+        label="State::In_Game"
+        MARKER_cluster_app_state_in_game ["style"="invis"]
+
+        subgraph cluster_on_enter {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_enter"
+            
+            AD ["label"="setup_dust"]
+        }
+
+        subgraph cluster_on_update {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_update"
+
+            H ["label"="update_velocity"]
+            J ["label"="update_position"]
+            K ["label"="update_translation"]
+            L ["label"="update_translation_atlas_sprite"]
+            M ["label"="collision_system"]
+            N ["label"="player_movement_done"]
+            T ["label"="spawn_another_car"]
+            U ["label"="fully_offscreen"]
+            V ["label"="despawn_out_of_bounds"]
+            Y ["label"="player_input"]
+            Z ["label"="player_step_sfx"]
+            AA ["label"="level_complete"]
+            AB ["label"="player_collides_car"]
+            AC ["label"="player_collides_wall"]
+            AE ["label"="spawn_new_dust"]
+            AF ["label"="update_dust_lifetime"]
+        }
+    }
+
+    subgraph cluster_app_state_level_done {
+        style=rounded
+        "color"="#e1e5ea";
+        "bgcolor"="#e1e5ea";
+        label="State::Level_Done"
+        MARKER_cluster_app_state_level_done ["style"="invis"]
+        subgraph cluster_on_enter {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_enter"
+
+            Q ["label"="unload_level"]
+        }
+    }
+
+    subgraph cluster_app_state_finished {
+        style=rounded
+        "color"="#e1e5ea";
+        "bgcolor"="#e1e5ea";
+        label="State::Finished"
+        MARKER_cluster_app_state_finished ["style"="invis"]
+        subgraph cluster_on_enter {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_enter"
+
+            AG ["label"="spawn_end_screen"]
+        }
+
+        subgraph cluster_on_update {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_update"
+
+            AH ["label"="restart"]
+        }
+
+        subgraph cluster_on_exit {
+            style=rounded
+            "color"="#cccccc";
+            "bgcolor"="#cccccc";
+            label="on_exit"
+
+            AI ["label"="despawn_win_screen"]
+        }
+        
+    }
+
+    // app state transitions
+    edge [color=yellow]
+    E -> MARKER_cluster_app_state_asset_loading
+    G -> MARKER_cluster_app_state_loading
+    P -> MARKER_cluster_app_state_in_game
+    Q -> MARKER_cluster_app_state_loading [constraint=false, label="load next level", fontcolor=white]
+    Q -> MARKER_cluster_app_state_finished [label="on last level", fontcolor=white]
+    AA -> MARKER_cluster_app_state_level_done
+    AH -> MARKER_cluster_app_state_loading [constraint=false, label="replay", fontcolor=white]
+    
+    edge [color=black]
+    F -> G
+    H -> J
+    J -> K 
+    J -> L 
+    L -> M 
+    M -> N 
+    K -> M 
+    O -> P 
+    R -> S 
+    O -> S  
+    U -> T 
+    U -> V 
+    O -> X 
+    Y -> N 
+    N -> Z 
+    N -> AA 
+    N -> AB 
+    N -> AC 
+}
