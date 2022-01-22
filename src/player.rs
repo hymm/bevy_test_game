@@ -8,10 +8,13 @@ use bevy::prelude::*;
 use std::time::Duration;
 
 const PLAYER_SPEED: f32 = 60.0;
+
 #[derive(Component)]
 pub struct Player;
+
 #[derive(Component)]
 struct CurrentPosition(TilePosition);
+
 #[derive(Component)]
 struct NextPosition(Option<TilePosition>);
 

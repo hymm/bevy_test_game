@@ -16,12 +16,12 @@ impl FromWorld for Levels {
             current_level: 0,
             levels: vec![
                 "2_slow_cars.map".to_string(),
-                // "4_cars.map".to_string(),
-                // "4_faster_cars.map".to_string(),
-                // "2_slow_cars_with_wall.map".to_string(),
-                // "6_slow_cars_with_walls.map".to_string(),
-                // "4_lanes_closed.map".to_string(),
-                // "too_busy.map".to_string(),
+                "4_cars.map".to_string(),
+                "4_faster_cars.map".to_string(),
+                "2_slow_cars_with_wall.map".to_string(),
+                "6_slow_cars_with_walls.map".to_string(),
+                "4_lanes_closed.map".to_string(),
+                "too_busy.map".to_string(),
             ],
         }
     }
@@ -167,7 +167,7 @@ fn load_map_atlas(
                             ))
                             .get_translation(
                                 Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
-                                tile_layer,
+                                tile_layer + 0.1,
                             ),
                             ..Default::default()
                         },
