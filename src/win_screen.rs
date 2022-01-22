@@ -34,6 +34,7 @@ fn spawn_end_screen(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
+            color: Color::rgba(0.0, 0.0, 0.0, 0.0).into(),
             ..Default::default()
         })
         .insert(RootNode)
@@ -48,7 +49,7 @@ fn spawn_end_screen(
                     TextStyle {
                         font: asset_server.load("fonts/silkscreen/slkscreb.ttf"),
                         font_size: 40.0,
-                        color: Color::rgb(95.0, 87.0, 79.0),
+                        color: Color::rgb(0.37, 0.34, 0.31),
                     },
                     Default::default(),
                 ),
@@ -65,7 +66,7 @@ fn spawn_end_screen(
                     TextStyle {
                         font: asset_server.load("fonts/silkscreen/slkscreb.ttf"),
                         font_size: 16.0,
-                        color: Color::rgb(95.0, 87.0, 79.0),
+                        color: Color::rgb(0.37, 0.34, 0.31),
                     },
                     TextAlignment {
                         horizontal: HorizontalAlign::Center,
