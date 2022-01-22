@@ -2,13 +2,13 @@
 
 use bevy::asset::Handle;
 use bevy::core::{Time, Timer};
-use bevy::ecs::prelude::{Query, Res};
+use bevy::ecs::prelude::{Query, Res, Component};
 use bevy::sprite::{TextureAtlas, TextureAtlasSprite};
 use std::time::Duration;
 
 pub struct AnimationFrame {
     pub atlas_handle: Handle<TextureAtlas>,
-    pub atlas_index: u32,
+    pub atlas_index: usize,
     pub duration: Duration,
 }
 
@@ -16,11 +16,12 @@ pub struct Animation {
     pub frames: Vec<AnimationFrame>,
 }
 
+#[derive(Component)]
 pub struct Animations {
     pub animations: Vec<Animation>,
 }
 
-#[derive(Default)]
+#[derive(Default, Component)]
 pub struct Animator {
     pub current_animation: usize,
     pub last_animation: usize,

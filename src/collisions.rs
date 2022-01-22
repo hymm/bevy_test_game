@@ -22,6 +22,7 @@ impl Default for Box {
     }
 }
 
+#[derive(Component)]
 pub struct Hurtbox(Box);
 impl Hurtbox {
     pub fn new(offset: Vec2, size: Vec2) -> Self {
@@ -36,6 +37,7 @@ impl std::ops::Deref for Hurtbox {
     }
 }
 
+#[derive(Component)]
 pub struct Hitbox(Box);
 impl Hitbox {
     pub fn new(offset: Vec2, size: Vec2) -> Self {
@@ -100,7 +102,7 @@ fn collision_system(
 
 pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_event::<CollisionEvent<Player, Car>>()
             .add_event::<CollisionEvent<Player, Wall>>()
             .add_system_set(

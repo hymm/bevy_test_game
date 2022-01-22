@@ -1,3 +1,13 @@
 {
-  "editor.defaultFormatter": "rust-lang.rust"
+  "editor.defaultFormatter": "rust-lang.rust",
+  "cSpell.words": [
+    "aabb",
+    "consts",
+    "despawn",
+    "Hitbox",
+    "hitboxes",
+    "Hurtbox",
+    "hurtboxes",
+    "slkscreb"
+  ]
 }

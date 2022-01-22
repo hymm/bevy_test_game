@@ -7,14 +7,12 @@ use crate::map::{CurrentLevel, Wall};
 use bevy::prelude::*;
 use std::time::Duration;
 
-#[derive(Clone, Default)]
-struct Materials {
-    player_material: Handle<ColorMaterial>,
-}
-
 const PLAYER_SPEED: f32 = 60.0;
+#[derive(Component)]
 pub struct Player;
+#[derive(Component)]
 struct CurrentPosition(TilePosition);
+#[derive(Component)]
 struct NextPosition(Option<TilePosition>);
 
 #[derive(Bundle)]
@@ -230,7 +228,7 @@ fn player_step_sfx(
     asset_server: Res<AssetServer>,
     audio: Res<Audio>,
 ) {
-    let animator = player_query.single().unwrap();
+    let animator = player_query.single();
     if animator.current_animation == 1 && *last_frame != animator.current_frame {
         let sfx = asset_server.load("sfx/step.mp3");
         audio.play(sfx);
@@ -248,30 +246,31 @@ fn player_collides_car(
     level: Res<CurrentLevel>,
 ) {
     if event_reader.iter().next().is_some() {
-        if let Ok((player, mut animator, current_position, layer)) = player_query.single_mut() {
-            if animator.current_animation == 2 {
-                return;
-            }
-            let spawn_pos = TilePosition(Vec2::new(
-                level.0.house.tile_x + 1.0,
-                level.0.house.tile_y - 1.0,
-            ));
-            commands
-                .entity(player)
-                .insert(NextPosition(Some(spawn_pos)));
+        let (player, mut animator, current_position, layer) = player_query.single_mut();
 
-            let current_translation =
-                current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
-            let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0), layer.0);
-            let direction = (next_translation - current_translation).normalize();
-            commands
-                .entity(player)
-                .insert(Velocity(direction.truncate() * PLAYER_ROLLING_SPEED));
-            animator.current_animation = 2;
-            animator.current_frame = 0;
-            let sfx = asset_server.load("sfx/honk.mp3");
-            audio.play(sfx);
+        if animator.current_animation == 2 {
+            return;
         }
+        let spawn_pos = TilePosition(Vec2::new(
+            level.0.house.tile_x + 1.0,
+            level.0.house.tile_y - 1.0,
+        ));
+        commands
+            .entity(player)
+            .insert(NextPosition(Some(spawn_pos)));
+
+        let current_translation =
+            current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
+        let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0), layer.0);
+        let direction = (next_translation - current_translation).normalize();
+        commands
+            .entity(player)
+            .insert(Velocity(direction.truncate() * PLAYER_ROLLING_SPEED));
+        animator.current_animation = 2;
+        animator.current_frame = 0;
+        let sfx = asset_server.load("sfx/honk.mp3");
+        audio.play(sfx);
+        
     }
 }
 
@@ -281,18 +280,18 @@ fn player_collides_wall(
     mut player_query: Query<(Entity, &mut Animator, &CurrentPosition), With<Player>>,
 ) {
     if event_reader.iter().next().is_some() {
-        if let Ok((player, mut animator, current_position)) = player_query.single_mut() {
-            if animator.current_animation == 2 {
-                return;
-            }
-            commands
-                .entity(player)
-                .insert(current_position.0.get_pixel_position())
-                .insert(Velocity(Vec2::new(0.0, 0.0)))
-                .insert(NextPosition(None));
-            animator.current_animation = 0;
-            animator.current_frame = 0;
+        let (player, mut animator, current_position) = player_query.single_mut();
+        
+        if animator.current_animation == 2 {
+            return;
         }
+        commands
+            .entity(player)
+            .insert(current_position.0.get_pixel_position())
+            .insert(Velocity(Vec2::new(0.0, 0.0)))
+            .insert(NextPosition(None));
+        animator.current_animation = 0;
+        animator.current_frame = 0;
     }
 }
 
@@ -301,16 +300,16 @@ fn level_complete(
     player_query: Query<&CurrentPosition, With<Player>>,
     level: Res<CurrentLevel>,
 ) {
-    if let Ok(current_position) = player_query.single() {
-        if (current_position.0 .0.y - level.0.bus_stop.tile_y - 1.0).abs() < 0.1 {
-            state.set(AppState::LevelDone).unwrap();
-        }
+    let current_position = player_query.single();
+    
+    if (current_position.0 .0.y - level.0.bus_stop.tile_y - 1.0).abs() < 0.1 {
+        state.set(AppState::LevelDone).unwrap();
     }
 }
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_enter(AppState::Loading)
                 .with_system(setup_player.system().after("load_current_map")),

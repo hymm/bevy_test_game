@@ -13,7 +13,7 @@ use bevy::{
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
 };
-use bevy_mod_debug_console::ConsoleDebugPlugin;
+// use bevy_mod_debug_console::ConsoleDebugPlugin;
 // use bevy_mod_debugdump::schedule_graph_dot;
 
 mod animation;
@@ -30,7 +30,7 @@ mod win_screen;
 use crate::consts::{AppState, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
     app.insert_resource(WindowDescriptor {
         title: "Shoe Crosses the Road".to_string(),
         width: TILE_WIDTH * SCALE * TILE_SIZE as f32,
@@ -55,7 +55,7 @@ fn main() {
     .add_plugin(player::PlayerPlugin)
     .add_plugin(particles::ParticleSystem)
     .add_plugin(win_screen::WinScreenPlugin)
-    .add_plugin(ConsoleDebugPlugin)
+    // .add_plugin(ConsoleDebugPlugin)
     .run();
 
     // println!("{}", schedule_graph_dot(&app.app.schedule));

@@ -5,6 +5,7 @@ use crate::map::CurrentLevel;
 use crate::rng_bag::RngBag;
 use bevy::prelude::*;
 
+#[derive(Component)]
 pub struct Car;
 struct GoingOffscreenEvent(Entity, f32, f32);
 
@@ -13,10 +14,10 @@ struct Materials {
     suv_material: Handle<TextureAtlas>,
 }
 
-struct ColorBag(pub RngBag<u32>);
+struct ColorBag(pub RngBag<usize>);
 impl Default for ColorBag {
     fn default() -> ColorBag {
-        ColorBag(RngBag::<u32>::new(vec![0, 0, 0, 1, 2, 3, 4, 5]))
+        ColorBag(RngBag::<usize>::new(vec![0, 0, 0, 1, 2, 3, 4, 5]))
     }
 }
 
@@ -112,6 +113,7 @@ fn spawn_another_car(
     }
 }
 
+#[derive(Component)]
 struct FullyOffscreen;
 fn fully_offscreen(
     mut q: Query<
@@ -173,7 +175,7 @@ fn despawn_out_of_bounds(mut commands: Commands, mut q: Query<Entity, With<Fully
 
 pub struct CarPlugin;
 impl Plugin for CarPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<Materials>()
             .init_resource::<ColorBag>()
             .add_event::<GoingOffscreenEvent>()

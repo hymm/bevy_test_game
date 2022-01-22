@@ -6,6 +6,9 @@ use bevy::prelude::*;
 use rand::Rng;
 use std::time::Duration;
 
+
+const BLOOD_COLOR: Color = Color::rgb(1.0, 0.0, 0.0);
+
 struct ParticleConfig {
     x_velocity_range: std::ops::Range<f32>, // 1 to 2
     y_velocity_range: std::ops::Range<f32>, // -3 to -1
@@ -23,23 +26,12 @@ impl Default for ParticleConfig {
     }
 }
 
+
+#[derive(Component)]
 struct Particle;
 struct ParticleSpawnTimer(Timer);
-struct ParticleColor {
-    material: Handle<ColorMaterial>,
-}
-impl FromWorld for ParticleColor {
-    fn from_world(world: &mut World) -> Self {
-        if let Some(mut materials) = world.get_resource_mut::<Assets<ColorMaterial>>() {
-            ParticleColor {
-                material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
-            }
-        } else {
-            panic!("Could not get materials to initialize dust color");
-        }
-    }
-}
 
+#[derive(Component)]
 struct Lifetime {
     current_lifetime: f32,
 }
@@ -57,11 +49,14 @@ struct ParticleBundle {
 }
 
 // spawn dust to mitigate hitching
-fn setup_dust(mut commands: Commands, dust_color: Res<ParticleColor>) {
+fn setup_dust(mut commands: Commands) {
     let dust_pos = PixelPosition(Vec2::new(200.0, 200.0));
     commands.spawn().insert_bundle(SpriteBundle {
-        sprite: Sprite::new(Vec2::new(1.0, 1.0)),
-        material: dust_color.material.clone(),
+        sprite: Sprite {
+            color: BLOOD_COLOR,
+            custom_size: Some(Vec2::new(1.0, 1.0)),
+            ..Default::default()
+        },
         transform: Transform {
             translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), 1.0),
             ..Default::default()
@@ -73,7 +68,6 @@ fn setup_dust(mut commands: Commands, dust_color: Res<ParticleColor>) {
 fn spawn_new_dust(
     mut commands: Commands,
     player_query: Query<(&PixelPosition, &Animator), With<Player>>,
-    dust_color: Res<ParticleColor>,
     config: Res<ParticleConfig>,
     mut timer: ResMut<ParticleSpawnTimer>,
     time: Res<Time>,
@@ -88,10 +82,13 @@ fn spawn_new_dust(
             let dust_pos = PixelPosition(player_pos.0 + Vec2::new(8.0, 4.0));
             commands.spawn().insert_bundle(ParticleBundle {
                 sprite_bundle: SpriteBundle {
-                    sprite: Sprite::new(Vec2::new(1.0, 1.0)),
-                    material: dust_color.material.clone(),
+                    sprite: Sprite {
+                        color: BLOOD_COLOR,
+                        custom_size: Some(Vec2::new(1.0, 1.0)),
+                        ..Default::default()
+                    },
                     transform: Transform {
-                        translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), dust_layer),
+                        translation: dust_pos.get_translation(Vec2::new(1.0, 1.0), 1.0),
                         ..Default::default()
                     },
                     ..Default::default()
@@ -127,9 +124,8 @@ fn update_dust_lifetime(
 
 pub struct ParticleSystem;
 impl Plugin for ParticleSystem {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<ParticleConfig>()
-            .init_resource::<ParticleColor>()
             .insert_resource(ParticleSpawnTimer(Timer::new(
                 Duration::from_millis((0.75 / 60.0 * 1000.0) as u64),
                 true,

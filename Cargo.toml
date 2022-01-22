@@ -2,15 +2,14 @@
 name = "bevy_test_game"
 version = "0.1.0"
 authors = ["Mike Hsu <mike.hsu@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.5"
+bevy = { version = "0.6", features = ["mp3"] }
 # bevy_mod_debugdump = "0.1"
-bevy_mod_debug_console = "0.0.2"
+# bevy_mod_debug_console = "0.0.2"
 rand = "0.8.0"
 ron = "0.6.4"
 serde = { version = "1.0", features = ["derive"] }
-clap = "3.0.0-beta.2"

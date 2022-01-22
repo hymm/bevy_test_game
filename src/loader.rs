@@ -54,7 +54,7 @@ fn track_assets_ready(
 
 pub struct AssetsLoadingPlugin;
 impl Plugin for AssetsLoadingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<SpriteHandles>()
             .init_resource::<MapHandles>()
             .init_resource::<SfxHandles>()

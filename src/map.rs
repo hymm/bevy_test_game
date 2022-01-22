@@ -16,22 +16,23 @@ impl FromWorld for Levels {
             current_level: 0,
             levels: vec![
                 "2_slow_cars.map".to_string(),
-                "4_cars.map".to_string(),
-                "4_faster_cars.map".to_string(),
-                "2_slow_cars_with_wall.map".to_string(),
-                "6_slow_cars_with_walls.map".to_string(),
-                "4_lanes_closed.map".to_string(),
-                "too_busy.map".to_string(),
+                // "4_cars.map".to_string(),
+                // "4_faster_cars.map".to_string(),
+                // "2_slow_cars_with_wall.map".to_string(),
+                // "6_slow_cars_with_walls.map".to_string(),
+                // "4_lanes_closed.map".to_string(),
+                // "too_busy.map".to_string(),
             ],
         }
     }
 }
 
+#[derive(Component)]
 pub struct Wall;
 
 #[derive(Serialize, Deserialize)]
 pub struct MapRow {
-    sprite: u32,
+    sprite: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -113,7 +114,6 @@ fn load_map_atlas(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<AppState>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     levels: Res<Levels>,
 ) {
     let map = load_map(&levels.levels[levels.current_level]);
@@ -185,7 +185,7 @@ fn load_map_atlas(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: materials.add(house_handle.into()),
+            texture: house_handle.into(),
             transform: Transform {
                 translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
                     .get_translation(Vec2::new(16., 16.), 1.0),
@@ -199,7 +199,7 @@ fn load_map_atlas(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: materials.add(bus_stop_handle.into()),
+            texture: bus_stop_handle.into(),
             transform: Transform {
                 translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
                     .get_translation(Vec2::new(16., 16.), 1.0),
@@ -242,7 +242,7 @@ pub fn load_map(path: &str) -> Map {
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<Levels>()
             .insert_resource(CurrentLevel::default())
             .add_system_set(

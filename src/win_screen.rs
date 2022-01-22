@@ -2,17 +2,19 @@ use crate::consts::AppState;
 use crate::map::Levels;
 use bevy::prelude::*;
 
+#[derive(Component)]
 struct RootNode;
+
+#[derive(Component)]
 struct VictoryScreen;
 fn spawn_end_screen(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let handle = asset_server.load("sprites/victory_screen.png");
     commands
         .spawn_bundle(SpriteBundle {
-            material: materials.add(handle.into()),
+            texture: handle,
             transform: Transform {
                 translation: Vec3::new(64.0, 64.0, 0.0),
                 ..Default::default()
@@ -32,7 +34,6 @@ fn spawn_end_screen(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            material: materials.add(Color::NONE.into()),
             ..Default::default()
         })
         .insert(RootNode)
@@ -92,18 +93,16 @@ fn despawn_win_screen(
     text_query: Query<Entity, With<RootNode>>,
     background_query: Query<Entity, With<VictoryScreen>>,
 ) {
-    if let Ok(entity) = text_query.single() {
-        commands.entity(entity).despawn_recursive();
-    }
+    let entity = text_query.single();
+    commands.entity(entity).despawn_recursive();
 
-    if let Ok(entity) = background_query.single() {
-        commands.entity(entity).despawn();
-    }
+    let entity = background_query.single();
+    commands.entity(entity).despawn();
 }
 
 pub struct WinScreenPlugin;
 impl Plugin for WinScreenPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_enter(AppState::Finished).with_system(spawn_end_screen.system()),
         )

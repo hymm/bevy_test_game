@@ -4,11 +4,14 @@ use bevy::sprite::Sprite;
 use bevy::transform::components::Transform;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Copy, Clone, PartialEq)]
+#[derive(Default, Copy, Clone, PartialEq, Component)]
 pub struct Velocity(pub Vec2);
+#[derive(Component)]
 pub struct Acceleration(pub Vec2);
+#[derive(Component)]
 
 pub struct SpriteSize(pub Vec2);
+#[derive(Component)]
 pub struct Layer(pub f32);
 
 #[derive(Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -24,7 +27,7 @@ impl TilePosition {
 }
 
 // position from top left of sprite
-#[derive(Default, Copy, Clone, PartialEq)]
+#[derive(Default, Copy, Clone, PartialEq, Component)]
 pub struct PixelPosition(pub Vec2);
 impl PixelPosition {
     // pub fn set_with_sprite_transform(s: Sprite, t: Transform) -> Self {
@@ -55,7 +58,7 @@ fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time
 // TODO: figure out how to unify update_translation and update_translation_atlas_sprite
 fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform, &Layer)>) {
     for (pos, sprite, mut transform, layer) in q.iter_mut() {
-        transform.translation = pos.get_translation(sprite.size, layer.0);
+        transform.translation = pos.get_translation(sprite.custom_size.unwrap(), layer.0);
     }
 }
 
@@ -69,7 +72,7 @@ fn update_translation_atlas_sprite(
 
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_update(AppState::InGame)
                 .with_system(update_velocity.system().before("update_position"))
@@ -93,18 +96,16 @@ impl Plugin for MovementPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::sprite::SpriteResizeMode;
 
     #[test]
     fn tile_position_get_translation() {
         let s = Sprite {
-            size: Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
-            resize_mode: SpriteResizeMode::default(),
+            custom_size: Some(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
             ..Default::default()
         };
 
         let tile_pos = TilePosition(Vec2::new(22., 33.));
-        let t = tile_pos.get_translation(s.size, 0.0);
+        let t = tile_pos.get_translation(s.custom_size.unwrap(), 0.0);
 
         assert_eq!(
             t,
@@ -127,14 +128,13 @@ mod tests {
     #[test]
     fn pixel_position_get_transform() {
         let s = Sprite {
-            size: Vec2::new(3., 2.),
-            resize_mode: SpriteResizeMode::default(),
+            custom_size: Some(Vec2::new(3., 2.)),
             ..Default::default()
         };
 
         let p = PixelPosition(Vec2::new(10.0, 5.0));
 
-        let t = p.get_translation(s.size, 0.0);
+        let t = p.get_translation(s.custom_size.unwrap(), 0.0);
         assert_eq!(t, Vec3::new(12.0, 6.0, 0.0));
     }
 }
