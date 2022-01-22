@@ -262,8 +262,7 @@ fn player_collides_car(
             .entity(player)
             .insert(NextPosition(Some(spawn_pos)));
 
-        let current_translation =
-            current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
+        let current_translation = current_position.get_translation(Vec2::new(8.0, 8.0), layer.0);
         let next_translation = spawn_pos.get_translation(Vec2::new(8.0, 8.0), layer.0);
         let direction = (next_translation - current_translation).normalize();
         commands
@@ -273,7 +272,6 @@ fn player_collides_car(
         animator.current_frame = 0;
         let sfx = asset_server.load("sfx/honk.mp3");
         audio.play(sfx);
-        
     }
 }
 
@@ -284,7 +282,7 @@ fn player_collides_wall(
 ) {
     if event_reader.iter().next().is_some() {
         let (player, mut animator, current_position) = player_query.single_mut();
-        
+
         if animator.current_animation == 2 {
             return;
         }
@@ -304,7 +302,7 @@ fn level_complete(
     level: Res<CurrentLevel>,
 ) {
     let current_position = player_query.single();
-    
+
     if (current_position.0 .0.y - level.0.bus_stop.tile_y - 1.0).abs() < 0.1 {
         state.set(AppState::LevelDone).unwrap();
     }

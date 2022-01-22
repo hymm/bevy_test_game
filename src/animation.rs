@@ -2,7 +2,7 @@
 
 use bevy::asset::Handle;
 use bevy::core::{Time, Timer};
-use bevy::ecs::prelude::{Query, Res, Component};
+use bevy::ecs::prelude::{Component, Query, Res};
 use bevy::sprite::{TextureAtlas, TextureAtlasSprite};
 use std::time::Duration;
 

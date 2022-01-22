@@ -6,7 +6,6 @@ use bevy::prelude::*;
 use rand::Rng;
 use std::time::Duration;
 
-
 const BLOOD_COLOR: Color = Color::rgb(1.0, 0.0, 0.0);
 
 struct ParticleConfig {
@@ -25,7 +24,6 @@ impl Default for ParticleConfig {
         }
     }
 }
-
 
 #[derive(Component)]
 struct Particle;

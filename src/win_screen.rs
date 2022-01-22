@@ -7,10 +7,7 @@ struct RootNode;
 
 #[derive(Component)]
 struct VictoryScreen;
-fn spawn_end_screen(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn spawn_end_screen(mut commands: Commands, asset_server: Res<AssetServer>) {
     let handle = asset_server.load("sprites/victory_screen.png");
     commands
         .spawn_bundle(SpriteBundle {
