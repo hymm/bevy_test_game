@@ -2,6 +2,7 @@ use crate::collisions::Hitbox;
 use crate::consts::{AppState, TILE_SIZE};
 use crate::coordinates::{Layer, TilePosition};
 use bevy::{prelude::*, reflect::TypeUuid};
+use bevy_asset_ron::RonAssetPlugin;
 use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -15,13 +16,13 @@ impl FromWorld for Levels {
         Levels {
             current_level: 0,
             levels: vec![
-                "2_slow_cars.map".to_string(),
-                "4_cars.map".to_string(),
-                "4_faster_cars.map".to_string(),
-                "2_slow_cars_with_wall.map".to_string(),
-                "6_slow_cars_with_walls.map".to_string(),
-                "4_lanes_closed.map".to_string(),
-                "too_busy.map".to_string(),
+                "levels/2_slow_cars.map".to_string(),
+                "levels/4_cars.map".to_string(),
+                "levels/4_faster_cars.map".to_string(),
+                "levels/2_slow_cars_with_wall.map".to_string(),
+                "levels/6_slow_cars_with_walls.map".to_string(),
+                "levels/4_lanes_closed.map".to_string(),
+                "levels/too_busy.map".to_string(),
             ],
         }
     }
@@ -30,36 +31,36 @@ impl FromWorld for Levels {
 #[derive(Component)]
 pub struct Wall;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct MapRow {
     sprite: usize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct House {
     pub tile_x: f32,
     pub tile_y: f32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct BusStop {
     pub tile_x: f32,
     pub tile_y: f32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct CarData {
     pub tile_position: TilePosition,
     pub speed: f32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct MapWallRow {
     row: i32,
     columns: [bool; 16],
 }
 
-#[derive(Serialize, Deserialize, TypeUuid)]
+#[derive(Serialize, Deserialize, TypeUuid, Clone)]
 #[uuid = "c57b6443-0ba6-4beb-82a9-a4d0948f99f5"]
 pub struct Map {
     pub rows: [MapRow; 16],
@@ -105,8 +106,14 @@ impl Default for CurrentLevel {
     }
 }
 
-fn load_current_map(levels: Res<Levels>, mut current_level: ResMut<CurrentLevel>) {
-    current_level.0 = load_map(&levels.levels[levels.current_level]);
+fn load_current_map(
+    levels: Res<Levels>,
+    mut current_level: ResMut<CurrentLevel>,
+    asset_server: Res<AssetServer>,
+    maps: Res<Assets<Map>>,
+) {
+    let map_handle: Handle<Map> = asset_server.load(&levels.levels[levels.current_level]);
+    current_level.0 = maps.get(map_handle).unwrap().clone();
 }
 
 fn load_map_atlas(
@@ -114,10 +121,12 @@ fn load_map_atlas(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<AppState>>,
+    maps: Res<Assets<Map>>,
     levels: Res<Levels>,
 ) {
-    let map = load_map(&levels.levels[levels.current_level]);
-
+    let map_handle: Handle<Map> = asset_server.load(&levels.levels[levels.current_level]);
+    let map = maps.get(map_handle).unwrap().clone();
+    
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
         texture_handle,
@@ -235,15 +244,16 @@ fn unload_level(
 //     to_writer_pretty(file, &map, pretty).expect("Serialization failed");
 // }
 
-pub fn load_map(path: &str) -> Map {
-    let file = File::open(format!("assets/levels/{}", path)).expect("Couldn't open map file");
-    from_reader(file).expect("Could not parse ron map file")
-}
+// pub fn load_map(path: &str) -> Map {
+//     let file = File::open(format!("assets/levels/{}", path)).expect("Couldn't open map file");
+//     from_reader(file).expect("Could not parse ron map file")
+// }
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Levels>()
+            .add_plugin(RonAssetPlugin::<Map>::new(&["map"]))
             .insert_resource(CurrentLevel::default())
             .add_system_set(
                 SystemSet::on_enter(AppState::Loading)

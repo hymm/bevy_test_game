@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.6" }
+bevy_asset_ron = "0.3"
 # bevy_mod_debugdump = "0.1"
 # bevy_mod_debug_console = "0.0.2"
 rand = "0.8.0"

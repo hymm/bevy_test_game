@@ -233,7 +233,7 @@ fn player_step_sfx(
 ) {
     let animator = player_query.single();
     if animator.current_animation == 1 && *last_frame != animator.current_frame {
-        let sfx = asset_server.load("sfx/step.mp3");
+        let sfx = asset_server.load("sfx/step.ogg");
         audio.play(sfx);
     }
     *last_frame = animator.current_frame;
@@ -270,7 +270,7 @@ fn player_collides_car(
             .insert(Velocity(direction.truncate() * PLAYER_ROLLING_SPEED));
         animator.current_animation = 2;
         animator.current_frame = 0;
-        let sfx = asset_server.load("sfx/honk.mp3");
+        let sfx = asset_server.load("sfx/honk.ogg");
         audio.play(sfx);
     }
 }
