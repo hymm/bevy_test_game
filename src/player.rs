@@ -132,6 +132,7 @@ fn setup_player(
 fn player_input(
     mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
+    touches: Res<Touches>,
     mut player_query: Query<
         (
             Entity,
@@ -160,6 +161,29 @@ fn player_input(
         }
         if keyboard_input.pressed(KeyCode::Down) {
             next_position.0.y -= 1.0;
+        }
+
+        // controls for touch swipes
+        for touch in touches.iter_just_released() {
+            let delta = touch.position() - touch.start_position();
+            // ignore touches that don't move enough
+            if delta.length() < 5.0 {
+                continue;
+            }
+            let abs = delta.abs();
+            if abs.x > abs.y {
+                if delta.x < 0.0 {
+                    next_position.0.x -= 1.0; 
+                } else {
+                    next_position.0.x += 1.0;
+                }
+            } else {
+                if delta.y < 0.0 {
+                    next_position.0.y -= 1.0;
+                } else {
+                    next_position.0.y += 1.0;
+                }
+            }
         }
 
         if next_position == current_position.0 {
