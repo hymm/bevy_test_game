@@ -6,6 +6,7 @@ use bevy::{
     prelude::*,
     sprite::collide_aabb::{collide, Collision},
 };
+use bevy_prototype_schedule_states::AppStateHelpers;
 use std::marker::PhantomData;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -105,13 +106,11 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CollisionEvent<Player, Car>>()
             .add_event::<CollisionEvent<Player, Wall>>()
-            .add_system_set(
-                SystemSet::on_update(AppState::InGame).with_system(
-                    collision_system
-                        .system()
-                        .after("update_translation")
-                        .before(SystemLabels::PlayerMovement),
-                ),
+            .add_system_to_state_update(
+                AppState::InGame,
+                collision_system
+                    .after("update_translation")
+                    .before(SystemLabels::PlayerMovement),
             );
     }
 }

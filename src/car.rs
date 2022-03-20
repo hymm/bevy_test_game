@@ -4,6 +4,7 @@ use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocit
 use crate::map::CurrentLevel;
 use crate::rng_bag::RngBag;
 use bevy::prelude::*;
+use bevy_prototype_schedule_states::AppStateHelpers;
 
 #[derive(Component)]
 pub struct Car;
@@ -179,26 +180,26 @@ impl Plugin for CarPlugin {
         app.init_resource::<Materials>()
             .init_resource::<ColorBag>()
             .add_event::<GoingOffscreenEvent>()
-            .add_system_set(
-                SystemSet::on_enter(AppState::Loading)
-                    .with_system(store_car_material.system().before("spawn_initial_cars"))
+            .add_system_set_to_state_enter(
+                AppState::Loading,
+                SystemSet::new()
+                    .with_system(store_car_material.before("spawn_initial_cars"))
                     .with_system(
                         spawn_initial_cars
-                            .system()
                             .label("spawn_initial_cars")
                             .after("load_current_map"),
                     ),
             )
-            .add_system_set(
-                SystemSet::on_update(AppState::InGame)
+            .add_system_set_to_state_update(
+                AppState::InGame,
+                SystemSet::new()
                     .with_system(spawn_another_car.system().label("spawn_another_car"))
                     .with_system(
                         fully_offscreen
-                            .system()
                             .label("fully_offscreen")
                             .before("spawn_another_car"),
                     )
-                    .with_system(despawn_out_of_bounds.system().after("fully_offscreen")),
+                    .with_system(despawn_out_of_bounds.after("fully_offscreen")),
             );
     }
 }

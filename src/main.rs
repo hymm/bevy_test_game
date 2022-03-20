@@ -28,6 +28,7 @@ mod player;
 mod rng_bag;
 mod win_screen;
 use crate::consts::{AppState, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
+use bevy_prototype_schedule_states::{driver, AppStateHelpers, NextState, StatePlugin};
 
 fn main() {
     let mut app = App::new();
@@ -44,9 +45,10 @@ fn main() {
     // Adds a system that prints diagnostics to the console
     // .add_plugin(LogDiagnosticsPlugin::default())
     .add_system(exit_on_esc_system.system())
-    .add_state(AppState::Setup)
+    .add_plugin(StatePlugin::<AppState>::new(AppState::Setup))
+    .add_system(driver::<AppState>.exclusive_system())
     .add_system(animation::sprite_animation_system.system())
-    .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup.system()))
+    .add_system_to_state_enter(AppState::Setup, setup)
     .add_plugin(loader::AssetsLoadingPlugin)
     .add_plugin(coordinates::MovementPlugin)
     .add_plugin(collisions::CollisionPlugin)
@@ -61,7 +63,7 @@ fn main() {
     // println!("{}", schedule_graph_dot(&app.app.schedule));
 }
 
-fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
+fn setup(mut commands: Commands, mut state: ResMut<NextState<AppState>>) {
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.orthographic_projection.window_origin = WindowOrigin::BottomLeft;
     camera.orthographic_projection.scaling_mode = ScalingMode::WindowSize;
@@ -70,5 +72,5 @@ fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
     commands.spawn().insert_bundle(camera);
     commands.spawn().insert_bundle(UiCameraBundle::default());
 
-    state.set(AppState::AssetLoading).unwrap();
+    state.set(AppState::AssetLoading);
 }

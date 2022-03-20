@@ -3,6 +3,7 @@ use crate::consts::AppState;
 use crate::coordinates::{Acceleration, Layer, PixelPosition, Velocity};
 use crate::player::Player;
 use bevy::prelude::*;
+use bevy_prototype_schedule_states::AppStateHelpers;
 use rand::Rng;
 use std::time::Duration;
 
@@ -128,11 +129,12 @@ impl Plugin for ParticleSystem {
                 Duration::from_millis((0.75 / 60.0 * 1000.0) as u64),
                 true,
             )))
-            .add_system_set(SystemSet::on_enter(AppState::InGame).with_system(setup_dust.system()))
-            .add_system_set(
-                SystemSet::on_update(AppState::InGame)
-                    .with_system(spawn_new_dust.system())
-                    .with_system(update_dust_lifetime.system()),
+            .add_system_to_state_enter(AppState::InGame, setup_dust)
+            .add_system_set_to_state_update(
+                AppState::InGame,
+                SystemSet::new()
+                    .with_system(spawn_new_dust)
+                    .with_system(update_dust_lifetime),
             );
     }
 }

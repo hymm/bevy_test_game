@@ -9,5 +9,8 @@
     "Hurtbox",
     "hurtboxes",
     "slkscreb"
-  ]
+  ],
+  "[rust]": {
+    "editor.defaultFormatter": "matklad.rust-analyzer"
+  }
 }

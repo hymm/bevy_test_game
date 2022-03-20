@@ -3,9 +3,8 @@ use crate::consts::{AppState, TILE_SIZE};
 use crate::coordinates::{Layer, TilePosition};
 use bevy::{prelude::*, reflect::TypeUuid};
 use bevy_asset_ron::RonAssetPlugin;
-use ron::de::from_reader;
+use bevy_prototype_schedule_states::{AppStateHelpers, NextState};
 use serde::{Deserialize, Serialize};
-use std::fs::File;
 
 pub struct Levels {
     pub current_level: usize,
@@ -120,13 +119,13 @@ fn load_map_atlas(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
     maps: Res<Assets<Map>>,
     levels: Res<Levels>,
 ) {
     let map_handle: Handle<Map> = asset_server.load(&levels.levels[levels.current_level]);
     let map = maps.get(map_handle).unwrap().clone();
-    
+
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
         texture_handle,
@@ -217,14 +216,14 @@ fn load_map_atlas(
             ..Default::default()
         })
         .insert(Layer(1.0));
-    state.set(AppState::InGame).unwrap();
+    state.set(AppState::InGame);
 }
 
 fn unload_level(
     mut commands: Commands,
     sprite_query: Query<Entity, Or<(With<Sprite>, With<TextureAtlasSprite>)>>,
     mut levels: ResMut<Levels>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
 ) {
     for entity in sprite_query.iter() {
         commands.entity(entity).despawn();
@@ -232,9 +231,9 @@ fn unload_level(
 
     if levels.current_level < levels.levels.len() - 1 {
         levels.current_level += 1;
-        state.set(AppState::Loading).unwrap();
+        state.set(AppState::Loading);
     } else {
-        state.set(AppState::Finished).unwrap();
+        state.set(AppState::Finished);
     }
 }
 
@@ -255,13 +254,12 @@ impl Plugin for MapPlugin {
         app.init_resource::<Levels>()
             .add_plugin(RonAssetPlugin::<Map>::new(&["map"]))
             .insert_resource(CurrentLevel::default())
-            .add_system_set(
-                SystemSet::on_enter(AppState::Loading)
+            .add_system_set_to_state_update(
+                AppState::Loading,
+                SystemSet::new()
                     .with_system(load_current_map.system().label("load_current_map"))
                     .with_system(load_map_atlas.system().after("load_current_map")),
             )
-            .add_system_set(
-                SystemSet::on_enter(AppState::LevelDone).with_system(unload_level.system()),
-            );
+            .add_system_to_state_enter(AppState::LevelDone, unload_level);
     }
 }

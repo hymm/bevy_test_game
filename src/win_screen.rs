@@ -1,6 +1,7 @@
 use crate::consts::AppState;
 use crate::map::Levels;
 use bevy::prelude::*;
+use bevy_prototype_schedule_states::{AppStateHelpers, NextState};
 
 #[derive(Component)]
 struct RootNode;
@@ -76,13 +77,13 @@ fn spawn_end_screen(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn restart(
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
     mut levels: ResMut<Levels>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.pressed(KeyCode::X) {
         levels.current_level = 0;
-        state.set(AppState::Loading).unwrap();
+        state.set(AppState::Loading);
     }
 }
 
@@ -101,12 +102,8 @@ fn despawn_win_screen(
 pub struct WinScreenPlugin;
 impl Plugin for WinScreenPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(AppState::Finished).with_system(spawn_end_screen.system()),
-        )
-        .add_system_set(SystemSet::on_update(AppState::Finished).with_system(restart.system()))
-        .add_system_set(
-            SystemSet::on_exit(AppState::Finished).with_system(despawn_win_screen.system()),
-        );
+        app.add_system_to_state_enter(AppState::Finished, spawn_end_screen)
+            .add_system_to_state_update(AppState::Finished, restart)
+            .add_system_to_state_exit(AppState::Finished, despawn_win_screen);
     }
 }
