@@ -254,11 +254,11 @@ impl Plugin for MapPlugin {
         app.init_resource::<Levels>()
             .add_plugin(RonAssetPlugin::<Map>::new(&["map"]))
             .insert_resource(CurrentLevel::default())
-            .add_system_set_to_state_update(
+            .add_system_set_to_state_enter(
                 AppState::Loading,
                 SystemSet::new()
-                    .with_system(load_current_map.system().label("load_current_map"))
-                    .with_system(load_map_atlas.system().after("load_current_map")),
+                    .with_system(load_current_map.label("load_current_map"))
+                    .with_system(load_map_atlas.after("load_current_map")),
             )
             .add_system_to_state_enter(AppState::LevelDone, unload_level);
     }

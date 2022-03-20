@@ -193,7 +193,7 @@ impl Plugin for CarPlugin {
             .add_system_set_to_state_update(
                 AppState::InGame,
                 SystemSet::new()
-                    .with_system(spawn_another_car.system().label("spawn_another_car"))
+                    .with_system(spawn_another_car.label("spawn_another_car"))
                     .with_system(
                         fully_offscreen
                             .label("fully_offscreen")
