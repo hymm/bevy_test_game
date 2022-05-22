@@ -108,7 +108,6 @@ impl Plugin for CollisionPlugin {
             .add_system_set(
                 SystemSet::on_update(AppState::InGame).with_system(
                     collision_system
-                        .system()
                         .after("update_translation")
                         .before(SystemLabels::PlayerMovement),
                 ),

@@ -13,8 +13,6 @@ use bevy::{
     prelude::*,
     render::camera::{ScalingMode, WindowOrigin},
 };
-// use bevy_mod_debug_console::ConsoleDebugPlugin;
-// use bevy_mod_debugdump::schedule_graph_dot;
 
 mod animation;
 mod car;
@@ -43,10 +41,10 @@ fn main() {
     // .add_plugin(bevy::diagnostic::EntityCountDiagnosticsPlugin::default())
     // Adds a system that prints diagnostics to the console
     // .add_plugin(LogDiagnosticsPlugin::default())
-    .add_system(exit_on_esc_system.system())
+    .add_system(exit_on_esc_system)
     .add_state(AppState::Setup)
-    .add_system(animation::sprite_animation_system.system())
-    .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup.system()))
+    .add_system(animation::sprite_animation_system)
+    .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup))
     .add_plugin(loader::AssetsLoadingPlugin)
     .add_plugin(coordinates::MovementPlugin)
     .add_plugin(collisions::CollisionPlugin)

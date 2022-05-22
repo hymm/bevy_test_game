@@ -86,13 +86,13 @@ impl Plugin for AssetsLoadingPlugin {
             .init_resource::<SfxHandles>()
             .add_system_set(
                 SystemSet::on_enter(AppState::AssetLoading)
-                    .with_system(setup_loader.system())
+                    .with_system(setup_loader)
                     .before("check_assets"),
             )
             .add_system_set(
                 SystemSet::on_update(AppState::AssetLoading)
                     .label("check_assets")
-                    .with_system(track_assets_ready.system()),
+                    .with_system(track_assets_ready),
             );
     }
 }

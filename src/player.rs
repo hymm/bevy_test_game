@@ -173,16 +173,14 @@ fn player_input(
             let abs = delta.abs();
             if abs.x > abs.y {
                 if delta.x < 0.0 {
-                    next_position.0.x -= 1.0; 
+                    next_position.0.x -= 1.0;
                 } else {
                     next_position.0.x += 1.0;
                 }
+            } else if delta.y < 0.0 {
+                next_position.0.y -= 1.0;
             } else {
-                if delta.y < 0.0 {
-                    next_position.0.y -= 1.0;
-                } else {
-                    next_position.0.y += 1.0;
-                }
+                next_position.0.y += 1.0;
             }
         }
 
@@ -337,28 +335,16 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_enter(AppState::Loading)
-                .with_system(setup_player.system().after("load_current_map")),
+                .with_system(setup_player.after("load_current_map")),
         )
         .add_system_set(
             SystemSet::on_update(AppState::InGame)
-                .with_system(player_input.system().before(SystemLabels::PlayerMovement))
-                .with_system(player_step_sfx.system().after(SystemLabels::PlayerMovement))
-                .with_system(
-                    player_movement_done
-                        .system()
-                        .label(SystemLabels::PlayerMovement),
-                )
-                .with_system(level_complete.system().after(SystemLabels::PlayerMovement))
-                .with_system(
-                    player_collides_car
-                        .system()
-                        .after(SystemLabels::PlayerMovement),
-                )
-                .with_system(
-                    player_collides_wall
-                        .system()
-                        .after(SystemLabels::PlayerMovement),
-                ),
+                .with_system(player_input.before(SystemLabels::PlayerMovement))
+                .with_system(player_step_sfx.after(SystemLabels::PlayerMovement))
+                .with_system(player_movement_done.label(SystemLabels::PlayerMovement))
+                .with_system(level_complete.after(SystemLabels::PlayerMovement))
+                .with_system(player_collides_car.after(SystemLabels::PlayerMovement))
+                .with_system(player_collides_wall.after(SystemLabels::PlayerMovement)),
         );
     }
 }

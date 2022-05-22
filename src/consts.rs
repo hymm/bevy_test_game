@@ -1,6 +1,6 @@
 use bevy::prelude::SystemLabel;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]
 pub enum AppState {
     Setup,
     AssetLoading,

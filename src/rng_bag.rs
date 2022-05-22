@@ -8,19 +8,17 @@ impl<T: Copy> RngBag<T> {
     pub fn new(items: Vec<T>) -> RngBag<T> {
         RngBag {
             items: items.clone(),
-            original_items: items.clone(),
+            original_items: items,
         }
     }
 
     pub fn get(&mut self) -> T {
         let mut rng = rand::thread_rng();
-        if self.items.len() == 0 {
+        if self.items.is_empty() {
             self.items = self.original_items.clone();
         }
 
         let (n, _) = self.items.iter().enumerate().choose(&mut rng).unwrap();
-        let item = self.items.remove(n);
-
-        item
+        self.items.remove(n)
     }
 }

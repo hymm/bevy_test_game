@@ -101,12 +101,8 @@ fn despawn_win_screen(
 pub struct WinScreenPlugin;
 impl Plugin for WinScreenPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(AppState::Finished).with_system(spawn_end_screen.system()),
-        )
-        .add_system_set(SystemSet::on_update(AppState::Finished).with_system(restart.system()))
-        .add_system_set(
-            SystemSet::on_exit(AppState::Finished).with_system(despawn_win_screen.system()),
-        );
+        app.add_system_set(SystemSet::on_enter(AppState::Finished).with_system(spawn_end_screen))
+            .add_system_set(SystemSet::on_update(AppState::Finished).with_system(restart))
+            .add_system_set(SystemSet::on_exit(AppState::Finished).with_system(despawn_win_screen));
     }
 }

@@ -51,12 +51,12 @@ fn spawn_car(
     speed: f32,
     colors: &mut ColorBag,
 ) {
-    let travelling_left = speed < 0.0;
+    let traveling_left = speed < 0.0;
     commands.spawn_bundle(CarBundle {
         sprite_bundle: SpriteSheetBundle {
-            texture_atlas: m.suv_material.clone(),
+            texture_atlas: m.suv_material,
             transform: Transform {
-                scale: Vec3::new(if travelling_left { -1.0 } else { 1.0 }, 1.0, 1.0),
+                scale: Vec3::new(if traveling_left { -1.0 } else { 1.0 }, 1.0, 1.0),
                 translation: tile_pos.get_translation(Vec2::new(14.0, 8.0), 1.0),
                 ..Default::default()
             },
@@ -70,7 +70,7 @@ fn spawn_car(
         sprite_size: SpriteSize(Vec2::new(14.0, 8.0)),
         layer: Layer(1.0),
         pixel_position: PixelPosition(Vec2::new(
-            tile_pos.0.x * TILE_SIZE as f32 + if travelling_left { 0.0 } else { 2.0 },
+            tile_pos.0.x * TILE_SIZE as f32 + if traveling_left { 0.0 } else { 2.0 },
             tile_pos.0.y * TILE_SIZE as f32,
         )),
         velocity: Velocity(Vec2::new(speed, 0.0)),
@@ -181,24 +181,22 @@ impl Plugin for CarPlugin {
             .add_event::<GoingOffscreenEvent>()
             .add_system_set(
                 SystemSet::on_enter(AppState::Loading)
-                    .with_system(store_car_material.system().before("spawn_initial_cars"))
+                    .with_system(store_car_material.before("spawn_initial_cars"))
                     .with_system(
                         spawn_initial_cars
-                            .system()
                             .label("spawn_initial_cars")
                             .after("load_current_map"),
                     ),
             )
             .add_system_set(
                 SystemSet::on_update(AppState::InGame)
-                    .with_system(spawn_another_car.system().label("spawn_another_car"))
+                    .with_system(spawn_another_car.label("spawn_another_car"))
                     .with_system(
                         fully_offscreen
-                            .system()
                             .label("fully_offscreen")
                             .before("spawn_another_car"),
                     )
-                    .with_system(despawn_out_of_bounds.system().after("fully_offscreen")),
+                    .with_system(despawn_out_of_bounds.after("fully_offscreen")),
             );
     }
 }

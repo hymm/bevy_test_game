@@ -75,17 +75,15 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_update(AppState::InGame)
-                .with_system(update_velocity.system().before("update_position"))
-                .with_system(update_position.system().label("update_position"))
+                .with_system(update_velocity.before("update_position"))
+                .with_system(update_position.label("update_position"))
                 .with_system(
                     update_translation
-                        .system()
                         .label("update_translation")
                         .after("update_position"),
                 )
                 .with_system(
                     update_translation_atlas_sprite
-                        .system()
                         .label("update_translation")
                         .after("update_position"),
                 ),
@@ -113,7 +111,7 @@ mod tests {
         );
     }
 
-    #[test]
+    // #[test]
     // fn pixel_position_set_with_sprite_transform() {
     //     let s = Sprite {
     //         size: Vec2::new(1., 2.),
@@ -125,6 +123,7 @@ mod tests {
     //     let p = PixelPosition::set_with_sprite_transform(s, t);
     //     assert_eq!(p.0, Vec2::new(-0.5, -1.0));
     // }
+
     #[test]
     fn pixel_position_get_transform() {
         let s = Sprite {

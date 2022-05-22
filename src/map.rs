@@ -3,9 +3,7 @@ use crate::consts::{AppState, TILE_SIZE};
 use crate::coordinates::{Layer, TilePosition};
 use bevy::{prelude::*, reflect::TypeUuid};
 use bevy_asset_ron::RonAssetPlugin;
-use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
 
 pub struct Levels {
     pub current_level: usize,
@@ -126,7 +124,7 @@ fn load_map_atlas(
 ) {
     let map_handle: Handle<Map> = asset_server.load(&levels.levels[levels.current_level]);
     let map = maps.get(map_handle).unwrap().clone();
-    
+
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
         texture_handle,
@@ -156,8 +154,7 @@ fn load_map_atlas(
                     sprite: spr,
                     ..Default::default()
                 })
-                .insert(Layer(tile_layer))
-                .id();
+                .insert(Layer(tile_layer));
         }
     }
 
@@ -194,7 +191,7 @@ fn load_map_atlas(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            texture: house_handle.into(),
+            texture: house_handle,
             transform: Transform {
                 translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
                     .get_translation(Vec2::new(16., 16.), 1.0),
@@ -208,7 +205,7 @@ fn load_map_atlas(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            texture: bus_stop_handle.into(),
+            texture: bus_stop_handle,
             transform: Transform {
                 translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
                     .get_translation(Vec2::new(16., 16.), 1.0),
@@ -257,11 +254,9 @@ impl Plugin for MapPlugin {
             .insert_resource(CurrentLevel::default())
             .add_system_set(
                 SystemSet::on_enter(AppState::Loading)
-                    .with_system(load_current_map.system().label("load_current_map"))
-                    .with_system(load_map_atlas.system().after("load_current_map")),
+                    .with_system(load_current_map.label("load_current_map"))
+                    .with_system(load_map_atlas.after("load_current_map")),
             )
-            .add_system_set(
-                SystemSet::on_enter(AppState::LevelDone).with_system(unload_level.system()),
-            );
+            .add_system_set(SystemSet::on_enter(AppState::LevelDone).with_system(unload_level));
     }
 }
