@@ -8,6 +8,7 @@ use std::time::Duration;
 
 const BLOOD_COLOR: Color = Color::rgb(1.0, 0.0, 0.0);
 
+#[derive(Resource)]
 struct ParticleConfig {
     x_velocity_range: std::ops::Range<f32>, // 1 to 2
     y_velocity_range: std::ops::Range<f32>, // -3 to -1
@@ -27,6 +28,7 @@ impl Default for ParticleConfig {
 
 #[derive(Component)]
 struct Particle;
+#[derive(Resource)]
 struct ParticleSpawnTimer(Timer);
 
 #[derive(Component)]
@@ -49,7 +51,7 @@ struct ParticleBundle {
 // spawn dust to mitigate hitching
 fn setup_dust(mut commands: Commands) {
     let dust_pos = PixelPosition(Vec2::new(200.0, 200.0));
-    commands.spawn().insert_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: BLOOD_COLOR,
             custom_size: Some(Vec2::new(1.0, 1.0)),
@@ -78,7 +80,7 @@ fn spawn_new_dust(
     for (player_pos, animator) in player_query.iter() {
         if animator.current_animation == 2 {
             let dust_pos = PixelPosition(player_pos.0 + Vec2::new(8.0, 4.0));
-            commands.spawn().insert_bundle(ParticleBundle {
+            commands.spawn(ParticleBundle {
                 sprite_bundle: SpriteBundle {
                     sprite: Sprite {
                         color: BLOOD_COLOR,
@@ -126,13 +128,9 @@ impl Plugin for ParticleSystem {
         app.init_resource::<ParticleConfig>()
             .insert_resource(ParticleSpawnTimer(Timer::new(
                 Duration::from_millis((0.75 / 60.0 * 1000.0) as u64),
-                true,
+                TimerMode::Repeating,
             )))
-            .add_system_set(SystemSet::on_enter(AppState::InGame).with_system(setup_dust))
-            .add_system_set(
-                SystemSet::on_update(AppState::InGame)
-                    .with_system(spawn_new_dust)
-                    .with_system(update_dust_lifetime),
-            );
+            .add_system(setup_dust.in_schedule(OnEnter(AppState::InGame)))
+            .add_systems((spawn_new_dust, update_dust_lifetime).in_set(OnUpdate(AppState::InGame)));
     }
 }

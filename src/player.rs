@@ -3,7 +3,7 @@ use crate::car::Car;
 use crate::collisions::{CollisionEvent, Hurtbox};
 use crate::consts::{AppState, SystemLabels, TILE_HEIGHT, TILE_WIDTH};
 use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocity};
-use crate::map::{CurrentLevel, Wall};
+use crate::map::{load_current_map, CurrentLevel, Wall};
 use bevy::prelude::*;
 use std::time::Duration;
 
@@ -42,14 +42,14 @@ fn setup_player(
 ) {
     let texture_handle = asset_server.load("sprites/shoe_animation.png");
     let sprite_size = SpriteSize(Vec2::new(8.0, 8.0));
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 4, 2, None, None);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_pos = TilePosition(Vec2::new(
         current_level.0.house.tile_x + 1.0,
         current_level.0.house.tile_y - 1.0,
     ));
     let player_layer = 2.0;
-    commands.spawn_bundle(PlayerBundle {
+    commands.spawn(PlayerBundle {
         sprite_bundle: SpriteSheetBundle {
             texture_atlas: texture_atlas_handle.clone(),
             transform: Transform {
@@ -319,32 +319,41 @@ fn player_collides_wall(
 }
 
 fn level_complete(
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
     player_query: Query<&CurrentPosition, With<Player>>,
     level: Res<CurrentLevel>,
 ) {
     let current_position = player_query.single();
 
     if (current_position.0 .0.y - level.0.bus_stop.tile_y - 1.0).abs() < 0.1 {
-        state.set(AppState::LevelDone).unwrap();
+        state.set(AppState::LevelDone);
     }
 }
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(AppState::Loading)
-                .with_system(setup_player.after("load_current_map")),
+        app.add_system(
+            setup_player
+                .in_schedule(OnEnter(AppState::Loading))
+                .after(load_current_map),
         )
-        .add_system_set(
-            SystemSet::on_update(AppState::InGame)
-                .with_system(player_input.before(SystemLabels::PlayerMovement))
-                .with_system(player_step_sfx.after(SystemLabels::PlayerMovement))
-                .with_system(player_movement_done.label(SystemLabels::PlayerMovement))
-                .with_system(level_complete.after(SystemLabels::PlayerMovement))
-                .with_system(player_collides_car.after(SystemLabels::PlayerMovement))
-                .with_system(player_collides_wall.after(SystemLabels::PlayerMovement)),
+        .add_systems(
+            (
+                player_input.before(SystemLabels::PlayerMovement),
+                player_movement_done.in_set(SystemLabels::PlayerMovement),
+            )
+                .in_set(OnUpdate(AppState::InGame)),
+        )
+        .add_systems(
+            (
+                player_step_sfx,
+                level_complete,
+                player_collides_car,
+                player_collides_wall,
+            )
+                .in_set(OnUpdate(AppState::InGame))
+                .after(SystemLabels::PlayerMovement),
         );
     }
 }

@@ -1,6 +1,8 @@
 #![allow(clippy::type_complexity)]
 
 use bevy::{
+    prelude::*,
+    render::camera::ScalingMode,
     // ecs::{
     //     schedule::ReportExecutionOrderAmbiguities,
     // },
@@ -9,9 +11,7 @@ use bevy::{
     //     LogDiagnosticsPlugin,
     //     EntityCountDiagnosticsPlugin,
     // },
-    input::system::exit_on_esc_system,
-    prelude::*,
-    render::camera::{ScalingMode, WindowOrigin},
+    window::{close_on_esc, WindowResolution},
 };
 
 mod animation;
@@ -29,22 +29,30 @@ use crate::consts::{AppState, SCALE, TILE_HEIGHT, TILE_SIZE, TILE_WIDTH};
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(WindowDescriptor {
-        title: "Shoe Crosses the Road".to_string(),
-        width: TILE_WIDTH * SCALE * TILE_SIZE as f32,
-        height: TILE_HEIGHT * SCALE * TILE_SIZE as f32,
-        ..Default::default()
-    })
-    .add_plugins(DefaultPlugins)
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Shoe Crosses the Road".to_string(),
+                    resolution: WindowResolution::new(
+                        TILE_WIDTH * SCALE * TILE_SIZE as f32,
+                        TILE_HEIGHT * SCALE * TILE_SIZE as f32,
+                    ),
+                    ..Default::default()
+                }),
+                ..default()
+            })
+            .set(ImagePlugin::default_nearest()),
+    )
     // .insert_resource(ReportExecutionOrderAmbiguities)
     // .add_plugin(FrameTimeDiagnosticsPlugin::default())
     // .add_plugin(bevy::diagnostic::EntityCountDiagnosticsPlugin::default())
     // Adds a system that prints diagnostics to the console
     // .add_plugin(LogDiagnosticsPlugin::default())
-    .add_system(exit_on_esc_system)
-    .add_state(AppState::Setup)
+    .add_system(close_on_esc)
+    .add_state::<AppState>()
     .add_system(animation::sprite_animation_system)
-    .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup))
+    .add_system(setup.in_schedule(OnEnter(AppState::Setup)))
     .add_plugin(loader::AssetsLoadingPlugin)
     .add_plugin(coordinates::MovementPlugin)
     .add_plugin(collisions::CollisionPlugin)
@@ -59,14 +67,13 @@ fn main() {
     // println!("{}", schedule_graph_dot(&app.app.schedule));
 }
 
-fn setup(mut commands: Commands, mut state: ResMut<State<AppState>>) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.orthographic_projection.window_origin = WindowOrigin::BottomLeft;
-    camera.orthographic_projection.scaling_mode = ScalingMode::WindowSize;
-    camera.orthographic_projection.scale = 1.0 / SCALE;
+fn setup(mut commands: Commands, mut state: ResMut<NextState<AppState>>) {
+    let mut camera = Camera2dBundle::default();
+    camera.projection.viewport_origin = Vec2::new(0.0, 0.0);
+    camera.projection.scaling_mode = ScalingMode::WindowSize(1.0);
+    camera.projection.scale = 1.0 / SCALE;
 
-    commands.spawn().insert_bundle(camera);
-    commands.spawn().insert_bundle(UiCameraBundle::default());
+    commands.spawn(camera);
 
-    state.set(AppState::AssetLoading).unwrap();
+    state.set(AppState::AssetLoading);
 }

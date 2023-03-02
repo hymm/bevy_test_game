@@ -1,8 +1,8 @@
 // borrowed from https://github.com/bevyengine/bevy/pull/1770/files
 
 use bevy::asset::Handle;
-use bevy::core::{Time, Timer};
 use bevy::ecs::prelude::{Component, Query, Res};
+use bevy::prelude::{Time, Timer};
 use bevy::sprite::{TextureAtlas, TextureAtlasSprite};
 use std::time::Duration;
 

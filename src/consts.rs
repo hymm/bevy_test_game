@@ -1,7 +1,8 @@
-use bevy::prelude::SystemLabel;
+use bevy::prelude::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Copy, States, Default)]
 pub enum AppState {
+    #[default]
     Setup,
     AssetLoading,
     Loading,
@@ -10,7 +11,7 @@ pub enum AppState {
     Finished,
 }
 
-#[derive(Debug, Hash, Clone, Eq, PartialEq, SystemLabel)]
+#[derive(Debug, Hash, Clone, Eq, PartialEq, SystemSet)]
 pub enum SystemLabels {
     PlayerMovement,
 }

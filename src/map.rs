@@ -2,9 +2,10 @@ use crate::collisions::Hitbox;
 use crate::consts::{AppState, TILE_SIZE};
 use crate::coordinates::{Layer, TilePosition};
 use bevy::{prelude::*, reflect::TypeUuid};
-use bevy_asset_ron::RonAssetPlugin;
+use bevy_common_assets::ron::RonAssetPlugin;
 use serde::{Deserialize, Serialize};
 
+#[derive(Resource)]
 pub struct Levels {
     pub current_level: usize,
     pub levels: Vec<String>,
@@ -68,6 +69,7 @@ pub struct Map {
     pub walls: Vec<MapWallRow>,
 }
 
+#[derive(Resource)]
 pub struct CurrentLevel(pub Map);
 impl Default for CurrentLevel {
     fn default() -> Self {
@@ -104,26 +106,26 @@ impl Default for CurrentLevel {
     }
 }
 
-fn load_current_map(
+pub fn load_current_map(
     levels: Res<Levels>,
     mut current_level: ResMut<CurrentLevel>,
     asset_server: Res<AssetServer>,
     maps: Res<Assets<Map>>,
 ) {
     let map_handle: Handle<Map> = asset_server.load(&levels.levels[levels.current_level]);
-    current_level.0 = maps.get(map_handle).unwrap().clone();
+    current_level.0 = maps.get(&map_handle).unwrap().clone();
 }
 
 fn load_map_atlas(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
     maps: Res<Assets<Map>>,
     levels: Res<Levels>,
 ) {
     let map_handle: Handle<Map> = asset_server.load(&levels.levels[levels.current_level]);
-    let map = maps.get(map_handle).unwrap().clone();
+    let map = maps.get(&map_handle).unwrap().clone();
 
     let texture_handle = asset_server.get_handle("sprites/map_tiles.png");
     let texture_atlas = TextureAtlas::from_grid(
@@ -131,6 +133,8 @@ fn load_map_atlas(
         Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32),
         4,
         3,
+        None,
+        None,
     );
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let tile_layer = 0.0;
@@ -139,8 +143,7 @@ fn load_map_atlas(
         for c in 0..16 {
             let spr = TextureAtlasSprite::new(map.rows[r].sprite);
             commands
-                .spawn()
-                .insert_bundle(SpriteSheetBundle {
+                .spawn(SpriteSheetBundle {
                     texture_atlas: texture_atlas_handle.clone(),
                     transform: Transform {
                         // order rows from top down
@@ -162,8 +165,7 @@ fn load_map_atlas(
         for (c, wall_exists) in wall_row.columns.iter().enumerate() {
             if *wall_exists {
                 commands
-                    .spawn()
-                    .insert_bundle(SpriteSheetBundle {
+                    .spawn(SpriteSheetBundle {
                         texture_atlas: texture_atlas_handle.clone(),
                         transform: Transform {
                             // order rows from top down
@@ -189,8 +191,7 @@ fn load_map_atlas(
 
     let house_handle = asset_server.get_handle("sprites/house.png");
     commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
+        .spawn(SpriteBundle {
             texture: house_handle,
             transform: Transform {
                 translation: TilePosition(Vec2::new(map.house.tile_x, map.house.tile_y))
@@ -203,8 +204,7 @@ fn load_map_atlas(
 
     let bus_stop_handle = asset_server.get_handle("sprites/bus_stop.png");
     commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
+        .spawn(SpriteBundle {
             texture: bus_stop_handle,
             transform: Transform {
                 translation: TilePosition(Vec2::new(map.bus_stop.tile_x, map.bus_stop.tile_y))
@@ -214,14 +214,14 @@ fn load_map_atlas(
             ..Default::default()
         })
         .insert(Layer(1.0));
-    state.set(AppState::InGame).unwrap();
+    state.set(AppState::InGame);
 }
 
 fn unload_level(
     mut commands: Commands,
     sprite_query: Query<Entity, Or<(With<Sprite>, With<TextureAtlasSprite>)>>,
     mut levels: ResMut<Levels>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
 ) {
     for entity in sprite_query.iter() {
         commands.entity(entity).despawn();
@@ -229,9 +229,9 @@ fn unload_level(
 
     if levels.current_level < levels.levels.len() - 1 {
         levels.current_level += 1;
-        state.set(AppState::Loading).unwrap();
+        state.set(AppState::Loading);
     } else {
-        state.set(AppState::Finished).unwrap();
+        state.set(AppState::Finished);
     }
 }
 
@@ -252,11 +252,10 @@ impl Plugin for MapPlugin {
         app.init_resource::<Levels>()
             .add_plugin(RonAssetPlugin::<Map>::new(&["map"]))
             .insert_resource(CurrentLevel::default())
-            .add_system_set(
-                SystemSet::on_enter(AppState::Loading)
-                    .with_system(load_current_map.label("load_current_map"))
-                    .with_system(load_map_atlas.after("load_current_map")),
+            .add_systems(
+                (load_current_map, load_map_atlas).chain()
+                    .in_schedule(OnEnter(AppState::Loading)),
             )
-            .add_system_set(SystemSet::on_enter(AppState::LevelDone).with_system(unload_level));
+            .add_system(unload_level.in_schedule(OnEnter(AppState::LevelDone)));
     }
 }

@@ -1,7 +1,7 @@
 use crate::collisions::Hitbox;
 use crate::consts::{AppState, SCREEN_X_MAX, SCREEN_Y_MAX, TILE_SIZE};
 use crate::coordinates::{Layer, PixelPosition, SpriteSize, TilePosition, Velocity};
-use crate::map::CurrentLevel;
+use crate::map::{load_current_map, CurrentLevel};
 use crate::rng_bag::RngBag;
 use bevy::prelude::*;
 
@@ -9,11 +9,12 @@ use bevy::prelude::*;
 pub struct Car;
 struct GoingOffscreenEvent(Entity, f32, f32);
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Resource)]
 struct Materials {
     suv_material: Handle<TextureAtlas>,
 }
 
+#[derive(Resource)]
 struct ColorBag(pub RngBag<usize>);
 impl Default for ColorBag {
     fn default() -> ColorBag {
@@ -28,7 +29,7 @@ fn store_car_material(
 ) {
     let texture_handle = asset_server.load("sprites/suv.png");
     let sprite_size = SpriteSize(Vec2::new(14.0, 8.0));
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 6, 1);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, sprite_size.0, 6, 1, None, None);
     m.suv_material = texture_atlases.add(texture_atlas);
 }
 
@@ -52,7 +53,7 @@ fn spawn_car(
     colors: &mut ColorBag,
 ) {
     let traveling_left = speed < 0.0;
-    commands.spawn_bundle(CarBundle {
+    commands.spawn(CarBundle {
         sprite_bundle: SpriteSheetBundle {
             texture_atlas: m.suv_material,
             transform: Transform {
@@ -179,24 +180,20 @@ impl Plugin for CarPlugin {
         app.init_resource::<Materials>()
             .init_resource::<ColorBag>()
             .add_event::<GoingOffscreenEvent>()
-            .add_system_set(
-                SystemSet::on_enter(AppState::Loading)
-                    .with_system(store_car_material.before("spawn_initial_cars"))
-                    .with_system(
-                        spawn_initial_cars
-                            .label("spawn_initial_cars")
-                            .after("load_current_map"),
-                    ),
+            .add_systems(
+                (
+                    store_car_material.before(spawn_initial_cars),
+                    spawn_initial_cars.after(load_current_map),
+                )
+                    .in_schedule(OnEnter(AppState::Loading)),
             )
-            .add_system_set(
-                SystemSet::on_update(AppState::InGame)
-                    .with_system(spawn_another_car.label("spawn_another_car"))
-                    .with_system(
-                        fully_offscreen
-                            .label("fully_offscreen")
-                            .before("spawn_another_car"),
-                    )
-                    .with_system(despawn_out_of_bounds.after("fully_offscreen")),
+            .add_systems(
+                (
+                    fully_offscreen.before(spawn_another_car),
+                    spawn_another_car,
+                    despawn_out_of_bounds.after(fully_offscreen),
+                )
+                    .in_set(OnUpdate(AppState::InGame)),
             );
     }
 }

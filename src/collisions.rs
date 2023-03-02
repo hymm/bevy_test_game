@@ -1,5 +1,6 @@
 use crate::car::Car;
 use crate::consts::{AppState, SystemLabels};
+use crate::coordinates::update_translation;
 use crate::map::Wall;
 use crate::player::Player;
 use bevy::{
@@ -105,12 +106,11 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CollisionEvent<Player, Car>>()
             .add_event::<CollisionEvent<Player, Wall>>()
-            .add_system_set(
-                SystemSet::on_update(AppState::InGame).with_system(
-                    collision_system
-                        .after("update_translation")
-                        .before(SystemLabels::PlayerMovement),
-                ),
+            .add_system(
+                collision_system
+                    .in_set(OnUpdate(AppState::InGame))
+                    .after(update_translation)
+                    .before(SystemLabels::PlayerMovement),
             );
     }
 }

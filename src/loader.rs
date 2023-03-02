@@ -2,17 +2,17 @@ use crate::consts::AppState;
 use bevy::asset::LoadState;
 use bevy::prelude::*;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Resource)]
 struct SpriteHandles {
     handles: Vec<HandleUntyped>,
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 struct MapHandles {
     handles: Vec<HandleUntyped>,
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 struct SfxHandles {
     handles: Vec<HandleUntyped>,
 }
@@ -55,7 +55,7 @@ fn setup_loader(
 }
 
 fn track_assets_ready(
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<NextState<AppState>>,
     sprite_handles: Res<SpriteHandles>,
     map_handles: Res<MapHandles>,
     sfx_handles: Res<SfxHandles>,
@@ -70,12 +70,12 @@ fn track_assets_ready(
         .collect();
 
     if LoadState::Loaded
-        != asset_server.get_group_load_state(handles.iter().map(|handle| handle.id))
+        != asset_server.get_group_load_state(handles.iter().map(|handle| handle.id()))
     {
         return;
     }
 
-    state.set(AppState::Loading).unwrap();
+    state.set(AppState::Loading);
 }
 
 pub struct AssetsLoadingPlugin;
@@ -84,15 +84,7 @@ impl Plugin for AssetsLoadingPlugin {
         app.init_resource::<SpriteHandles>()
             .init_resource::<MapHandles>()
             .init_resource::<SfxHandles>()
-            .add_system_set(
-                SystemSet::on_enter(AppState::AssetLoading)
-                    .with_system(setup_loader)
-                    .before("check_assets"),
-            )
-            .add_system_set(
-                SystemSet::on_update(AppState::AssetLoading)
-                    .label("check_assets")
-                    .with_system(track_assets_ready),
-            );
+            .add_system(setup_loader.in_schedule(OnEnter(AppState::AssetLoading)))
+            .add_system(track_assets_ready.in_set(OnUpdate(AppState::AssetLoading)));
     }
 }

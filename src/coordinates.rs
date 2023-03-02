@@ -54,9 +54,9 @@ fn update_position(mut q: Query<(&Velocity, &mut PixelPosition)>, time: Res<Time
     }
 }
 
-// TODO: add Changed<PixelPosition> here after upgrading to 5.0
+// TODO: add Changed<PixelPosition> here after upgrading to 0.5
 // TODO: figure out how to unify update_translation and update_translation_atlas_sprite
-fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform, &Layer)>) {
+pub fn update_translation(mut q: Query<(&PixelPosition, &Sprite, &mut Transform, &Layer)>) {
     for (pos, sprite, mut transform, layer) in q.iter_mut() {
         transform.translation = pos.get_translation(sprite.custom_size.unwrap(), layer.0);
     }
@@ -73,20 +73,14 @@ fn update_translation_atlas_sprite(
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(AppState::InGame)
-                .with_system(update_velocity.before("update_position"))
-                .with_system(update_position.label("update_position"))
-                .with_system(
-                    update_translation
-                        .label("update_translation")
-                        .after("update_position"),
-                )
-                .with_system(
-                    update_translation_atlas_sprite
-                        .label("update_translation")
-                        .after("update_position"),
-                ),
+        app.add_systems(
+            (
+                update_velocity.before(update_position),
+                update_position,
+                update_translation.after(update_position),
+                update_translation_atlas_sprite.after(update_position),
+            )
+                .in_set(OnUpdate(AppState::InGame)),
         );
     }
 }
